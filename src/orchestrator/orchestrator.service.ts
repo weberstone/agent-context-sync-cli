@@ -146,10 +146,7 @@ export class OrchestratorService {
       'userprompt.md',
     );
 
-    const hasProjectWorkflow = await this.discovery.hasProjectOverride(
-      projectName,
-      'workflow.md',
-    );
+    const hasProjectWorkflow = await this.discovery.hasProjectOverride(projectName, 'workflow.md');
     const hasGeneralWorkflow = await this.discovery.isFileNonEmpty(
       `${this.rulesDir}/${arch}/workflow.md`,
     );

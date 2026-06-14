@@ -1,14 +1,22 @@
 import path from 'node:path';
-import fs from 'node:fs';
+import fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-function findProjectRoot(startDir: string): string {
+async function findProjectRoot(startDir: string): Promise<string> {
   let dir = startDir;
   const root = path.parse(dir).root;
   while (dir !== root) {
     const candidate = path.join(dir, 'rules');
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
-      return dir;
+    try {
+      const stat = await fs.stat(candidate);
+      if (stat.isDirectory()) return dir;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw new Error(
+          `Failed to read directory "${candidate}": ${(err as Error).message}`,
+        );
+      }
+      // ENOENT: no rules/ at this level, walk up to parent
     }
     dir = path.dirname(dir);
   }
@@ -18,7 +26,7 @@ function findProjectRoot(startDir: string): string {
 }
 
 const sourceDir = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = findProjectRoot(sourceDir);
+const projectRoot = await findProjectRoot(sourceDir);
 const rulesDir = path.join(projectRoot, 'rules');
 
 export function getSourceDir(): string {
