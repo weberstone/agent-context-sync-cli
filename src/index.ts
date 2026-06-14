@@ -6,14 +6,14 @@
 
 import path from 'node:path';
 import { getTargetDir, getProjectName, getRulesDir } from './utils/paths.js';
-import { ConfigService } from './config/config.service.js';
-import { DiscoveryService } from './discovery/discovery.service.js';
-import { PromptService } from './prompts/prompts.service.js';
-import { CompilerService } from './compiler/compiler.service.js';
+import { ConfigService } from './rules/config/config.service.js';
+import { DiscoveryService } from './rules/discovery/discovery.service.js';
+import { PromptService } from './rules/prompts/prompts.service.js';
+import { CompilerService } from './rules/compiler/compiler.service.js';
 import { OutputService } from './output/output.service.js';
-import { SkillsDiscoveryService } from './skills/skills-discovery.service.js';
-import { SkillsPromptService } from './skills/skills-prompts.service.js';
-import { SkillsCompilerService } from './skills/skills-compiler.service.js';
+import { SkillsDiscoveryService } from './skills/discovery/skills-discovery.service.js';
+import { SkillsPromptService } from './skills/prompts/skills-prompts.service.js';
+import { SkillsCompilerService } from './skills/compiler/skills-compiler.service.js';
 import { OrchestratorService } from './orchestrator/orchestrator.service.js';
 
 const targetDir = getTargetDir();

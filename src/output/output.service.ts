@@ -14,7 +14,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { writeTextFile, ensureDir, readTextFile, isEnoent } from '../utils/fs.js';
 import { logWarning } from '../utils/log.js';
-import type { CompiledFile } from '../compiler/compiler.types.js';
+import type { CompiledFile } from '../rules/compiler/compiler.types.js';
 import { wrapRules, updateRules, hasSyncMarkers } from './content-wrapper.js';
 
 const RULES_DIR = '.agents/rules';

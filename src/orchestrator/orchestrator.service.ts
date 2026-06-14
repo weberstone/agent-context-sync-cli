@@ -20,23 +20,23 @@ import {
   spinner,
   intro,
   multiselect,
-} from '../prompts/clack-adapter.js';
-import { ConfigService } from '../config/config.service.js';
-import type { Config } from '../config/config.types.js';
-import { DiscoveryService } from '../discovery/discovery.service.js';
-import { PromptService } from '../prompts/prompts.service.js';
-import type { Answers } from '../prompts/prompts.types.js';
-import { AVAILABLE_AGENTS } from '../prompts/prompts.types.js';
-import { CompilerService } from '../compiler/compiler.service.js';
-import type { CompiledFile } from '../compiler/compiler.types.js';
-import { generatorRegistry } from '../generators/generator.service.js';
-import type { GeneratorContext } from '../generators/generator.types.js';
+} from '../rules/prompts/clack-adapter.js';
+import { ConfigService } from '../rules/config/config.service.js';
+import type { Config } from '../rules/config/config.types.js';
+import { DiscoveryService } from '../rules/discovery/discovery.service.js';
+import { PromptService } from '../rules/prompts/prompts.service.js';
+import type { Answers } from '../rules/prompts/prompts.types.js';
+import { AVAILABLE_AGENTS } from '../rules/prompts/prompts.types.js';
+import { CompilerService } from '../rules/compiler/compiler.service.js';
+import type { CompiledFile } from '../rules/compiler/compiler.types.js';
+import { generatorRegistry } from '../rules/generators/generator.service.js';
+import type { GeneratorContext } from '../rules/generators/generator.types.js';
 import { OutputService } from '../output/output.service.js';
 
-import { SkillsDiscoveryService } from '../skills/skills-discovery.service.js';
-import { SkillsPromptService } from '../skills/skills-prompts.service.js';
-import { SkillsCompilerService } from '../skills/skills-compiler.service.js';
-import type { ParsedSkill } from '../skills/skills.types.js';
+import { SkillsDiscoveryService } from '../skills/discovery/skills-discovery.service.js';
+import { SkillsPromptService } from '../skills/prompts/skills-prompts.service.js';
+import { SkillsCompilerService } from '../skills/compiler/skills-compiler.service.js';
+import type { ParsedSkill } from '../skills/types/skills.types.js';
 import { logError } from '../utils/log.js';
 import fs from 'node:fs/promises';
 
