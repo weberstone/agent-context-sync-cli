@@ -9,6 +9,8 @@ import type { CompiledFile } from '../compiler/compiler.types.js';
 import { generatorRegistry } from '../generators/generator.service.js';
 import type { GeneratorContext } from '../generators/generator.types.js';
 import { OutputService } from '../output/output.service.js';
+import { logError } from '../utils/log.js';
+import fs from 'node:fs/promises';
 
 const KNOWN_RULE_FILES = new Set([
   'userprompt.md',
@@ -26,9 +28,14 @@ export class OrchestratorService {
     private readonly compiler: CompilerService,
     private readonly output: OutputService,
     private readonly projectName: string,
+    private readonly rulesDir: string,
+    private readonly targetDir: string,
   ) {}
 
   async run(): Promise<void> {
+    if (!(await this.preflightRulesDir())) return;
+    if (!(await this.preflightWriteAccess())) return;
+
     // 1. Config discovery
     const answers = await this.resolveAnswers();
     if (answers === null) return;
@@ -63,6 +70,34 @@ export class OrchestratorService {
     outro('All rules have been generated successfully.');
     outro('Files created in .agents/rules/ and agent config files in project root.');
     note('Add ai-rules-config.json to .gitignore to keep it local.');
+  }
+
+  // ---- Pre-flight ----
+
+  private async preflightRulesDir(): Promise<boolean> {
+    try {
+      await fs.access(this.rulesDir, fs.constants.R_OK);
+      return true;
+    } catch {
+      logError(
+        `Rules directory not found or not readable: ${this.rulesDir}\n` +
+          'Make sure the agent-rules-sync-cli package includes the rules/ directory.',
+      );
+      return false;
+    }
+  }
+
+  private async preflightWriteAccess(): Promise<boolean> {
+    try {
+      await fs.access(this.targetDir, fs.constants.W_OK);
+      return true;
+    } catch {
+      logError(
+        `No write permission for target directory: ${this.targetDir}\n` +
+          'Check directory permissions and try again.',
+      );
+      return false;
+    }
   }
 
   // ---- Private ----

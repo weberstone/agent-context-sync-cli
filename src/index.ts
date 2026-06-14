@@ -23,6 +23,8 @@ const orchestrator = new OrchestratorService(
   compiler,
   output,
   projectName,
+  rulesDir,
+  targetDir,
 );
 
 orchestrator.run().catch((err) => {
