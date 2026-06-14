@@ -430,14 +430,14 @@ export class OrchestratorService {
     const pc = this.colors;
 
     const art = [
-      pc.boldMagenta('        ▄████▄ '),
+      pc.boldMagenta('    ▄████▄     '),
       pc.boldMagenta('    ▄████████▄   '),
       pc.boldMagenta('   ███◣▛██▜◢███  '),
       pc.boldMagenta('   ███▒████▒███  '),
       pc.boldMagenta('    ▀████████▀   '),
-      pc.boldMagenta('  ▄██▒▒██▒▒██▄  '),
-      pc.boldMagenta(' ██▀╲╱╲╱╲╱╲╱▀██  '),
-      pc.boldMagenta(' ▀  ╲  ╲╱  ╱  ▀ '),
+      pc.boldMagenta('  ▄██▒▒██▒▒██▄   '),
+      pc.boldMagenta(' ██▀╲╱╲╱╲╱╲╱▀██   '),
+      pc.boldMagenta(' ▀  ╲  ╲╱  ╱  ▀   '),
     ];
 
     const parts: string[] = [];
@@ -479,7 +479,6 @@ export class OrchestratorService {
       this.padLine('  Created files:', pc.boldGreen),
       '',
       ...files.map((f) => this.padLine('      ' + f, pc.cyan)),
-      this.hr(pc.boldGreen),
     ];
 
     outro(lines.join('\n'));
@@ -496,7 +495,6 @@ export class OrchestratorService {
         this.padLine('  Add "ai-rules-config.json"', pc.yellow),
         this.padLine('  to your .gitignore file', pc.yellow),
         this.padLine('  to keep it private.', pc.yellow),
-        this.hr(pc.boldYellow),
       ];
 
       outro(lines.join('\n'));
