@@ -1,4 +1,5 @@
 import path from 'node:path';
+import fs from 'node:fs/promises';
 import { writeTextFile, ensureDir, readTextFile, isEnoent } from '../utils/fs.js';
 import { logWarning } from '../utils/log.js';
 import type { CompiledFile } from '../compiler/compiler.types.js';
@@ -23,8 +24,7 @@ export class OutputService {
   async fileExists(relativePath: string): Promise<boolean> {
     const filePath = path.join(this.targetDir, relativePath);
     try {
-      const { stat } = await import('node:fs/promises');
-      await stat(filePath);
+      await fs.stat(filePath);
       return true;
     } catch (err) {
       if (!isEnoent(err)) {
