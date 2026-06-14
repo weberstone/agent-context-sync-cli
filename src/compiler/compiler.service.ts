@@ -7,10 +7,7 @@ const PACKAGE_RULES_HEADER = '# Code Style & Tools';
 export class CompilerService {
   constructor(private readonly discovery: DiscoveryService) {}
 
-  async compile(
-    answers: Answers,
-    projectName: string,
-  ): Promise<CompiledFile[]> {
+  async compile(answers: Answers, projectName: string): Promise<CompiledFile[]> {
     const results: (CompiledFile | null)[] = [
       await this.compileUserprompt(answers, projectName),
       await this.compileWorkflow(answers, projectName),
@@ -32,23 +29,15 @@ export class CompilerService {
     const content =
       answers.userpromptSource === 'project'
         ? await this.discovery.getProjectOverride(projectName, 'userprompt.md')
-        : await this.discovery.getArchFile(
-            answers.architecture,
-            'userprompt.md',
-          );
+        : await this.discovery.getArchFile(answers.architecture, 'userprompt.md');
 
     if (content === null) return null;
 
     return { filename: 'userprompt.md', content };
   }
 
-  private async compileSpec(
-    projectName: string,
-  ): Promise<CompiledFile | null> {
-    const content = await this.discovery.getProjectOverride(
-      projectName,
-      'spec.md',
-    );
+  private async compileSpec(projectName: string): Promise<CompiledFile | null> {
+    const content = await this.discovery.getProjectOverride(projectName, 'spec.md');
 
     if (content === null) return null;
 
@@ -83,9 +72,7 @@ export class CompilerService {
     return results;
   }
 
-  private async compilePackageRules(
-    answers: Answers,
-  ): Promise<CompiledFile | null> {
+  private async compilePackageRules(answers: Answers): Promise<CompiledFile | null> {
     if (answers.packages.length === 0) return null;
 
     const parts: string[] = [];

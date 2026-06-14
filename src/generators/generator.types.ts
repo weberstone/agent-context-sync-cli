@@ -14,9 +14,4 @@ export interface AgentFile {
 
 export type AgentGenerator = (ctx: GeneratorContext) => AgentFile[];
 
-export type AgentKey =
-  | 'claude-code'
-  | 'cursor'
-  | 'gemini-cli'
-  | 'codex'
-  | 'continue';
+export type AgentKey = 'claude-code' | 'cursor' | 'gemini-cli' | 'codex' | 'continue';

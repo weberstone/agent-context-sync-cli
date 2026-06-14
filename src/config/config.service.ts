@@ -42,9 +42,7 @@ export class ConfigService {
     try {
       parsed = JSON.parse(raw);
     } catch {
-      logWarning(
-        'Config file is corrupted (invalid JSON). A new questionnaire will be started.',
-      );
+      logWarning('Config file is corrupted (invalid JSON). A new questionnaire will be started.');
       return null;
     }
 
@@ -85,29 +83,18 @@ export class ConfigService {
     }
 
     if (!VALID_ARCHITECTURES.has(obj.architecture as string)) {
-      throw new Error(
-        `"architecture" must be one of: ${[...VALID_ARCHITECTURES].join(', ')}`,
-      );
+      throw new Error(`"architecture" must be one of: ${[...VALID_ARCHITECTURES].join(', ')}`);
     }
 
-    if (
-      !Array.isArray(obj.frameworks) ||
-      !obj.frameworks.every((f) => typeof f === 'string')
-    ) {
+    if (!Array.isArray(obj.frameworks) || !obj.frameworks.every((f) => typeof f === 'string')) {
       throw new Error('"frameworks" must be an array of strings');
     }
 
-    if (
-      !Array.isArray(obj.packages) ||
-      !obj.packages.every((p) => typeof p === 'string')
-    ) {
+    if (!Array.isArray(obj.packages) || !obj.packages.every((p) => typeof p === 'string')) {
       throw new Error('"packages" must be an array of strings');
     }
 
-    if (
-      !Array.isArray(obj.agents) ||
-      !obj.agents.every((a) => typeof a === 'string')
-    ) {
+    if (!Array.isArray(obj.agents) || !obj.agents.every((a) => typeof a === 'string')) {
       throw new Error('"agents" must be an array of strings');
     }
 

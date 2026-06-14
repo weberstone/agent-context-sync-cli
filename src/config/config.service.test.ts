@@ -46,11 +46,7 @@ describe('read', () => {
 
   it('returns null for corrupted JSON', async () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await fs.writeFile(
-      path.join(tmpDir, 'ai-rules-config.json'),
-      '{ broken json',
-      'utf-8',
-    );
+    await fs.writeFile(path.join(tmpDir, 'ai-rules-config.json'), '{ broken json', 'utf-8');
     const result = await service.read();
     expect(result).toBe(null);
     expect(spy).toHaveBeenCalled();
@@ -97,11 +93,7 @@ describe('read', () => {
   it('tolerates extra unknown fields', async () => {
     await fs.writeFile(
       path.join(tmpDir, 'ai-rules-config.json'),
-      JSON.stringify(
-        { ...validConfig, unknownField: 'should be ignored' },
-        null,
-        2,
-      ),
+      JSON.stringify({ ...validConfig, unknownField: 'should be ignored' }, null, 2),
       'utf-8',
     );
     const result = await service.read();
@@ -119,10 +111,7 @@ describe('read', () => {
 describe('write', () => {
   it('writes formatted JSON to ai-rules-config.json', async () => {
     await service.write(validConfig);
-    const raw = await fs.readFile(
-      path.join(tmpDir, 'ai-rules-config.json'),
-      'utf-8',
-    );
+    const raw = await fs.readFile(path.join(tmpDir, 'ai-rules-config.json'), 'utf-8');
     const parsed = JSON.parse(raw);
     expect(parsed).toEqual(validConfig);
     expect(raw).toContain('\n');

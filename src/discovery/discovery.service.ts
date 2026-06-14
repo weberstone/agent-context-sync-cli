@@ -3,11 +3,7 @@ import fs from 'node:fs/promises';
 import type { Architecture } from '../config/config.types.js';
 import type { TemplateCategory } from './discovery.types.js';
 
-const ALL_ARCHITECTURES: readonly Architecture[] = [
-  'frontend',
-  'backend',
-  'fullstack',
-];
+const ALL_ARCHITECTURES: readonly Architecture[] = ['frontend', 'backend', 'fullstack'];
 
 export class DiscoveryService {
   constructor(private readonly rulesDir: string) {}
@@ -35,29 +31,13 @@ export class DiscoveryService {
     return this.listDir(path.join(this.rulesDir, arch, 'packages'));
   }
 
-  async hasProjectOverride(
-    projectName: string,
-    fileName: string,
-  ): Promise<boolean> {
-    const filePath = path.join(
-      this.rulesDir,
-      'projects',
-      projectName,
-      fileName,
-    );
+  async hasProjectOverride(projectName: string, fileName: string): Promise<boolean> {
+    const filePath = path.join(this.rulesDir, 'projects', projectName, fileName);
     return this.isFileNonEmpty(filePath);
   }
 
-  async getProjectOverride(
-    projectName: string,
-    fileName: string,
-  ): Promise<string | null> {
-    const filePath = path.join(
-      this.rulesDir,
-      'projects',
-      projectName,
-      fileName,
-    );
+  async getProjectOverride(projectName: string, fileName: string): Promise<string | null> {
+    const filePath = path.join(this.rulesDir, 'projects', projectName, fileName);
     return this.readIfNonEmpty(filePath);
   }
 
@@ -66,19 +46,11 @@ export class DiscoveryService {
     category: TemplateCategory,
     name: string,
   ): Promise<string | null> {
-    const filePath = path.join(
-      this.rulesDir,
-      arch,
-      category,
-      `${name}.md`,
-    );
+    const filePath = path.join(this.rulesDir, arch, category, `${name}.md`);
     return this.readIfNonEmpty(filePath);
   }
 
-  async getArchFile(
-    arch: Architecture,
-    filename: string,
-  ): Promise<string | null> {
+  async getArchFile(arch: Architecture, filename: string): Promise<string | null> {
     const filePath = path.join(this.rulesDir, arch, filename);
     return this.readIfNonEmpty(filePath);
   }
@@ -98,14 +70,10 @@ export class DiscoveryService {
       return [];
     }
 
-    return entries
-      .filter((name) => name.endsWith('.md'))
-      .map((name) => name.replace(/\.md$/, ''));
+    return entries.filter((name) => name.endsWith('.md')).map((name) => name.replace(/\.md$/, ''));
   }
 
-  private async readIfNonEmpty(
-    filePath: string,
-  ): Promise<string | null> {
+  private async readIfNonEmpty(filePath: string): Promise<string | null> {
     let content: string;
     try {
       content = await fs.readFile(filePath, 'utf-8');

@@ -36,13 +36,16 @@ beforeEach(() => {
 describe('compile', () => {
   it('produces files in priority order', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi.fn()
+      getProjectOverride: vi
+        .fn()
         .mockResolvedValueOnce('# Project Spec') // spec
         .mockResolvedValueOnce('# Project Arch'), // architecture
-      getArchFile: vi.fn()
+      getArchFile: vi
+        .fn()
         .mockResolvedValueOnce('# Userprompt') // userprompt general
         .mockResolvedValueOnce('# Workflow'), // workflow general
-      getTemplateContent: vi.fn()
+      getTemplateContent: vi
+        .fn()
         .mockResolvedValueOnce('# Framework') // frameworks
         .mockResolvedValueOnce('# Tailwind Rules'), // packages
     });
@@ -61,13 +64,16 @@ describe('compile', () => {
 
   it('skips spec when project override is null', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi.fn()
+      getProjectOverride: vi
+        .fn()
         .mockResolvedValueOnce(null) // spec: not found
         .mockResolvedValueOnce('# Arch'), // architecture
-      getArchFile: vi.fn()
+      getArchFile: vi
+        .fn()
         .mockResolvedValueOnce('# Userprompt')
         .mockResolvedValueOnce('# Workflow'),
-      getTemplateContent: vi.fn()
+      getTemplateContent: vi
+        .fn()
         .mockResolvedValueOnce('# Framework')
         .mockResolvedValueOnce('# Tailwind'),
     });
@@ -79,12 +85,10 @@ describe('compile', () => {
 
   it('skips userprompt when hasUserprompt is false', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi.fn()
-        .mockResolvedValueOnce('# Spec')
-        .mockResolvedValueOnce('# Arch'),
-      getArchFile: vi.fn()
-        .mockResolvedValueOnce('# Workflow'), // only workflow
-      getTemplateContent: vi.fn()
+      getProjectOverride: vi.fn().mockResolvedValueOnce('# Spec').mockResolvedValueOnce('# Arch'),
+      getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'), // only workflow
+      getTemplateContent: vi
+        .fn()
         .mockResolvedValueOnce('# Framework')
         .mockResolvedValueOnce('# Tailwind'),
     });
@@ -99,57 +103,53 @@ describe('compile', () => {
 
   it('reads userprompt from project override', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi.fn()
+      getProjectOverride: vi
+        .fn()
         .mockResolvedValueOnce('# Project Userprompt') // 1st: userprompt (project)
         .mockResolvedValueOnce('# Spec') // 2nd: spec
         .mockResolvedValueOnce('# Arch'), // 3rd: architecture
-      getArchFile: vi.fn()
-        .mockResolvedValueOnce('# Workflow'), // 1st: workflow (general)
-      getTemplateContent: vi.fn()
+      getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'), // 1st: workflow (general)
+      getTemplateContent: vi
+        .fn()
         .mockResolvedValueOnce('# Framework')
         .mockResolvedValueOnce('# Tailwind'),
     });
 
     const service = new CompilerService(discovery as any);
-    const files = await service.compile(
-      answers({ userpromptSource: 'project' }),
-      'my-app',
-    );
+    const files = await service.compile(answers({ userpromptSource: 'project' }), 'my-app');
     const u = files.find((f) => f.filename === 'userprompt.md');
     expect(u!.content).toBe('# Project Userprompt');
   });
 
   it('reads workflow from project override', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi.fn()
+      getProjectOverride: vi
+        .fn()
         .mockResolvedValueOnce('# Project Workflow') // 1st: workflow (project)
         .mockResolvedValueOnce('# Spec') // 2nd: spec
         .mockResolvedValueOnce('# Arch'), // 3rd: architecture
-      getArchFile: vi.fn()
-        .mockResolvedValueOnce('# Userprompt'), // 1st: userprompt (general)
-      getTemplateContent: vi.fn()
+      getArchFile: vi.fn().mockResolvedValueOnce('# Userprompt'), // 1st: userprompt (general)
+      getTemplateContent: vi
+        .fn()
         .mockResolvedValueOnce('# Framework')
         .mockResolvedValueOnce('# Tailwind'),
     });
 
     const service = new CompilerService(discovery as any);
-    const files = await service.compile(
-      answers({ workflowSource: 'project' }),
-      'my-app',
-    );
+    const files = await service.compile(answers({ workflowSource: 'project' }), 'my-app');
     const w = files.find((f) => f.filename === 'workflow.md');
     expect(w!.content).toBe('# Project Workflow');
   });
 
   it('handles multiple frameworks for fullstack', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi.fn()
-        .mockResolvedValueOnce('# Spec')
-        .mockResolvedValueOnce('# Arch'),
-      getArchFile: vi.fn()
+      getProjectOverride: vi.fn().mockResolvedValueOnce('# Spec').mockResolvedValueOnce('# Arch'),
+      getArchFile: vi
+        .fn()
         .mockResolvedValueOnce('# Userprompt')
         .mockResolvedValueOnce('# Workflow'),
-      getTemplateContent: vi.fn()
+      getTemplateContent: vi
+        .fn()
         .mockResolvedValueOnce('# Angular') // framework 1
         .mockResolvedValueOnce('# Only Node') // framework 2
         .mockResolvedValueOnce('# Tailwind'), // packages
@@ -172,14 +172,12 @@ describe('compile', () => {
 
   it('skips package-rules when nothing selected', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi.fn()
-        .mockResolvedValueOnce('# Spec')
-        .mockResolvedValueOnce('# Arch'),
-      getArchFile: vi.fn()
+      getProjectOverride: vi.fn().mockResolvedValueOnce('# Spec').mockResolvedValueOnce('# Arch'),
+      getArchFile: vi
+        .fn()
         .mockResolvedValueOnce('# Userprompt')
         .mockResolvedValueOnce('# Workflow'),
-      getTemplateContent: vi.fn()
-        .mockResolvedValueOnce('# Framework'),
+      getTemplateContent: vi.fn().mockResolvedValueOnce('# Framework'),
     });
 
     const service = new CompilerService(discovery as any);
@@ -189,13 +187,13 @@ describe('compile', () => {
 
   it('compiles package-rules with header and concatenation', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi.fn()
-        .mockResolvedValueOnce('# Spec')
-        .mockResolvedValueOnce('# Arch'),
-      getArchFile: vi.fn()
+      getProjectOverride: vi.fn().mockResolvedValueOnce('# Spec').mockResolvedValueOnce('# Arch'),
+      getArchFile: vi
+        .fn()
         .mockResolvedValueOnce('# Userprompt')
         .mockResolvedValueOnce('# Workflow'),
-      getTemplateContent: vi.fn()
+      getTemplateContent: vi
+        .fn()
         .mockResolvedValueOnce('# Framework')
         .mockResolvedValueOnce('# Tailwind Content')
         .mockResolvedValueOnce('# TypeScript Content'),

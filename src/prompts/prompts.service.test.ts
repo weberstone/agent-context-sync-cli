@@ -55,11 +55,13 @@ beforeEach(() => {
 describe('run', () => {
   it('completes full questionnaire and returns Answers', async () => {
     const discovery = makeDiscovery({
-      hasProjectOverride: vi.fn()
+      hasProjectOverride: vi
+        .fn()
         .mockResolvedValueOnce(true) // spec
         .mockResolvedValueOnce(false) // userprompt project
         .mockResolvedValueOnce(false), // workflow project
-      isFileNonEmpty: vi.fn()
+      isFileNonEmpty: vi
+        .fn()
         .mockResolvedValueOnce(true) // userprompt general
         .mockResolvedValueOnce(true), // workflow general
       listFrameworks: vi.fn().mockResolvedValue(['angular-guidelines', 'only-node']),
@@ -117,16 +119,16 @@ describe('run', () => {
 
   it('shows fullstack when available and uses multiselect for frameworks', async () => {
     const discovery = makeDiscovery({
-      hasProjectOverride: vi.fn()
+      hasProjectOverride: vi
+        .fn()
         .mockResolvedValueOnce(true) // spec
         .mockResolvedValueOnce(false) // userprompt project
         .mockResolvedValueOnce(false), // workflow project
-      isFileNonEmpty: vi.fn()
+      isFileNonEmpty: vi
+        .fn()
         .mockResolvedValueOnce(true) // userprompt general
         .mockResolvedValueOnce(true), // workflow general
-      getAvailableArchitectures: vi
-        .fn()
-        .mockResolvedValue(['frontend', 'backend', 'fullstack']),
+      getAvailableArchitectures: vi.fn().mockResolvedValue(['frontend', 'backend', 'fullstack']),
       listFrameworks: vi.fn().mockResolvedValue(['angular-guidelines', 'only-node']),
       listPackages: vi.fn().mockResolvedValue(['tailwind']),
     });
@@ -146,11 +148,13 @@ describe('run', () => {
 
   it('warns and continues when userprompt not found', async () => {
     const discovery = makeDiscovery({
-      hasProjectOverride: vi.fn()
+      hasProjectOverride: vi
+        .fn()
         .mockResolvedValueOnce(true) // spec
         .mockResolvedValueOnce(false) // userprompt project
         .mockResolvedValueOnce(false), // workflow project
-      isFileNonEmpty: vi.fn()
+      isFileNonEmpty: vi
+        .fn()
         .mockResolvedValueOnce(false) // userprompt general
         .mockResolvedValueOnce(true), // workflow general
       listFrameworks: vi.fn().mockResolvedValue(['only-node']),
@@ -175,13 +179,12 @@ describe('run', () => {
 
   it('returns empty arrays when directories are empty and user continues', async () => {
     const discovery = makeDiscovery({
-      hasProjectOverride: vi.fn()
+      hasProjectOverride: vi
+        .fn()
         .mockResolvedValueOnce(true) // spec
         .mockResolvedValueOnce(false)
         .mockResolvedValueOnce(false),
-      isFileNonEmpty: vi.fn()
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(true),
+      isFileNonEmpty: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(true),
       listFrameworks: vi.fn().mockResolvedValue([]),
       listPackages: vi.fn().mockResolvedValue([]),
     });
@@ -216,13 +219,12 @@ describe('run', () => {
 
   it('allows empty agent selection', async () => {
     const discovery = makeDiscovery({
-      hasProjectOverride: vi.fn()
+      hasProjectOverride: vi
+        .fn()
         .mockResolvedValueOnce(true)
         .mockResolvedValueOnce(false)
         .mockResolvedValueOnce(false),
-      isFileNonEmpty: vi.fn()
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(true),
+      isFileNonEmpty: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(true),
       listFrameworks: vi.fn().mockResolvedValue(['only-node']),
       listPackages: vi.fn().mockResolvedValue(['typescript']),
     });
@@ -242,7 +244,8 @@ describe('run', () => {
 
   it('uses project overrides when available', async () => {
     const discovery = makeDiscovery({
-      hasProjectOverride: vi.fn()
+      hasProjectOverride: vi
+        .fn()
         .mockResolvedValueOnce(true) // spec: project
         .mockResolvedValueOnce(true) // userprompt: project
         .mockResolvedValueOnce(true), // workflow: project

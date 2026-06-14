@@ -1,12 +1,4 @@
-import {
-  intro,
-  outro,
-  cancel,
-  isCancel,
-  confirm,
-  select,
-  multiselect,
-} from './clack-adapter.js';
+import { intro, outro, cancel, isCancel, confirm, select, multiselect } from './clack-adapter.js';
 import type { Architecture } from '../config/config.types.js';
 import type { DiscoveryService } from '../discovery/discovery.service.js';
 import type { Answers } from './prompts.types.js';
@@ -65,10 +57,7 @@ export class PromptService {
   // ---- Step 2 ----
 
   private async stepCheckSpec(projectName: string): Promise<boolean> {
-    const hasSpec = await this.discovery.hasProjectOverride(
-      projectName,
-      'spec.md',
-    );
+    const hasSpec = await this.discovery.hasProjectOverride(projectName, 'spec.md');
 
     if (hasSpec) return true;
 
@@ -91,9 +80,7 @@ export class PromptService {
     const available = await this.discovery.getAvailableArchitectures();
 
     if (available.length === 0) {
-      cancel(
-        'No architecture directories found in rules/. At least one is required.',
-      );
+      cancel('No architecture directories found in rules/. At least one is required.');
       return null;
     }
 
@@ -102,10 +89,7 @@ export class PromptService {
       label: ARCH_LABELS[arch],
     }));
 
-    const choice = await select(
-      'Select project architecture type:',
-      options,
-    );
+    const choice = await select('Select project architecture type:', options);
 
     if (isCancelSignal(choice)) {
       cancel('Operation cancelled by user.');
@@ -124,10 +108,7 @@ export class PromptService {
     hasUserprompt: boolean;
     userpromptSource: 'project' | 'general' | null;
   } | null> {
-    const hasProject = await this.discovery.hasProjectOverride(
-      projectName,
-      'userprompt.md',
-    );
+    const hasProject = await this.discovery.hasProjectOverride(projectName, 'userprompt.md');
 
     if (hasProject) {
       return { hasUserprompt: true, userpromptSource: 'project' };
@@ -155,9 +136,7 @@ export class PromptService {
 
   // ---- Step 4 ----
 
-  private async stepFrameworks(
-    architecture: Architecture,
-  ): Promise<string[] | null> {
+  private async stepFrameworks(architecture: Architecture): Promise<string[] | null> {
     const available = await this.discovery.listFrameworks(architecture);
 
     if (available.length === 0) {
@@ -202,9 +181,7 @@ export class PromptService {
 
   // ---- Step 5 ----
 
-  private async stepPackages(
-    architecture: Architecture,
-  ): Promise<string[] | null> {
+  private async stepPackages(architecture: Architecture): Promise<string[] | null> {
     const available = await this.discovery.listPackages(architecture);
 
     if (available.length === 0) {
@@ -223,11 +200,7 @@ export class PromptService {
 
     const options = available.map((name) => ({ value: name, label: name }));
 
-    const choices = await multiselect(
-      'Select packages and tools:',
-      options,
-      false,
-    );
+    const choices = await multiselect('Select packages and tools:', options, false);
 
     if (isCancelSignal(choices)) {
       cancel('Operation cancelled by user.');
@@ -243,10 +216,7 @@ export class PromptService {
     architecture: Architecture,
     projectName: string,
   ): Promise<'project' | 'general' | null> {
-    const hasProject = await this.discovery.hasProjectOverride(
-      projectName,
-      'workflow.md',
-    );
+    const hasProject = await this.discovery.hasProjectOverride(projectName, 'workflow.md');
 
     if (hasProject) return 'project';
 
@@ -255,9 +225,7 @@ export class PromptService {
 
     if (hasGeneral) return 'general';
 
-    const proceed = await confirm(
-      'Workflow file not found. Continue without workflow rules?',
-    );
+    const proceed = await confirm('Workflow file not found. Continue without workflow rules?');
 
     if (isCancelSignal(proceed) || !proceed) {
       cancel('Operation cancelled by user.');
