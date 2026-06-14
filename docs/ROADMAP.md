@@ -109,15 +109,15 @@
 **Цель:** Полный опросник (шаги 2-7 PRD) через `@clack/prompts`.
 
 **Задачи:**
-- [ ] Шаг 2: Проверка `spec.md` в `rules/projects/<name>/`. Если нет/пуст → «Continue without project spec?»
-- [ ] Шаг 3: Radio-выбор архитектуры — динамический список из `getAvailableArchitectures()`
-- [ ] Шаг 3b (NEW): Проверка `userprompt.md` — проектный → общий. Если нет/пуст → warning: «Userprompt file not found. It is highly recommended to create one. Continue without it?»
-- [ ] Шаг 4: Выбор фреймворков. Frontend/Backend → radio. Fullstack → multiselect (из `rules/fullstack/frameworks/` ТОЛЬКО). Пустая папка → warning + continue/cancel
-- [ ] Шаг 5: Multiselect пакетов из `listPackages(arch)`. Пустая папка → warning + continue/cancel
-- [ ] Шаг 6: Информирование об источнике workflow (проектный / общий). Пустой → warning + continue/cancel
-- [ ] Шаг 7: Multiselect AI-агентов (Claude Code, Cursor, Gemini, Codex, Continue, etc.)
-- [ ] Cancel на любом шаге → чистый выход, ничего не создано
-- [ ] Возврат `Answers` — структурированный объект со всеми выборами
+- [x] Шаг 2: Проверка `spec.md` в `rules/projects/<name>/`. Если нет/пуст → «Continue without project spec?»
+- [x] Шаг 3: Radio-выбор архитектуры — динамический список из `getAvailableArchitectures()`
+- [x] Шаг 3b (NEW): Проверка `userprompt.md` — проектный → общий. Если нет/пуст → warning: «Userprompt file not found. It is highly recommended to create one. Continue without it?»
+- [x] Шаг 4: Выбор фреймворков. Frontend/Backend → radio. Fullstack → multiselect (из `rules/fullstack/frameworks/` ТОЛЬКО). Пустая папка → warning + continue/cancel
+- [x] Шаг 5: Multiselect пакетов из `listPackages(arch)`. Пустая папка → warning + continue/cancel
+- [x] Шаг 6: Информирование об источнике workflow (проектный / общий). Пустой → warning + continue/cancel
+- [x] Шаг 7: Multiselect AI-агентов (Claude Code, Cursor, Gemini, Codex, Continue, etc.)
+- [x] Cancel на любом шаге → чистый выход, ничего не создано
+- [x] Возврат `Answers` — структурированный объект со всеми выборами
   ```ts
   interface Answers {
     architecture: Architecture;
