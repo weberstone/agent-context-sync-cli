@@ -9,11 +9,11 @@
 **Цель:** Скелет проекта, способный скомпилироваться в `dist/index.js`.
 
 **Задачи:**
-- [ ] `package.json` — name, version, `"type": "module"`, dependencies (`@clack/prompts`, `picocolors`), devDependencies (`tsup`, `typescript`, `@types/node`), `"files": ["dist/", "rules/"]`
-- [ ] `tsconfig.json` — target ES2022, module ESNext, strict, moduleResolution bundler
-- [ ] `tsup.config.ts` — entry `src/index.ts`, format esm, minify, clean, no external
-- [ ] `src/index.ts` — минимальный `console.log('agent-rules-sync-cli ready')`
-- [ ] `.gitignore` — `dist/`, `node_modules/`
+- [x] `package.json` — name, version, `"type": "module"`, dependencies (`@clack/prompts`, `picocolors`), devDependencies (`tsup`, `typescript`, `@types/node`), `"files": ["dist/", "rules/"]`
+- [x] `tsconfig.json` — target ES2022, module ESNext, strict, moduleResolution bundler
+- [x] `tsup.config.ts` — entry `src/index.ts`, format esm, minify, clean, no external
+- [x] `src/index.ts` — минимальный `console.log('agent-rules-sync-cli ready')`
+- [x] `.gitignore` — `dist/`, `node_modules/`
 
 **Зависимости:** Нет.
 
@@ -29,19 +29,19 @@
 **Цель:** Модуль `utils.ts` — фундамент для всей работы с путями и файловой системой.
 
 **Задачи:**
-- [ ] `getSourceDir()` — директория CLI через `import.meta.url` + `fileURLToPath`
-- [ ] `getTargetDir()` — `process.cwd()`
-- [ ] `getProjectName()` — `path.basename(process.cwd())`
-- [ ] `getRulesDir()` — `path.join(getSourceDir(), 'rules')`
-- [ ] Цветное логирование: `logSuccess()`, `logWarning()`, `logError()`, `logInfo()` (через `picocolors`)
-- [ ] `readTextFile(path)`, `writeTextFile(path, content)` на `fs/promises`
-- [ ] `ensureDir(path)` — рекурсивное создание директории
+- [x] `getSourceDir()` — директория CLI через `import.meta.url` + `fileURLToPath`
+- [x] `getTargetDir()` — `process.cwd()`
+- [x] `getProjectName()` — `path.basename(process.cwd())`
+- [x] `getRulesDir()` — `path.join(getSourceDir(), 'rules')`
+- [x] Цветное логирование: `logSuccess()`, `logWarning()`, `logError()`, `logInfo()` (через `picocolors`)
+- [x] `readTextFile(path)`, `writeTextFile(path, content)` на `fs/promises`
+- [x] `ensureDir(path)` — рекурсивное создание директории
 
 **Зависимости:** Этап 1.
 
 **Definition of Done:**
 - `getSourceDir()` работает при запуске через `node` и через `npx`
-- `getProjectName()` возвращает имя текущей директории
+- `getProjectName()` возвращает имя текущ ей директории
 - Хелперы чтения/записи работают с абсолютными путями
 
 ---
