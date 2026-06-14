@@ -36,12 +36,12 @@ export class DiscoveryService {
   }
 
   async hasProjectOverride(projectName: string, fileName: string): Promise<boolean> {
-    const filePath = path.join(this.rulesDir, 'projects', projectName, fileName);
+    const filePath = path.join(this.rulesDir, '..', 'projects', projectName, 'rules', fileName);
     return this.isFileNonEmpty(filePath);
   }
 
   async getProjectOverride(projectName: string, fileName: string): Promise<string | null> {
-    const filePath = path.join(this.rulesDir, 'projects', projectName, fileName);
+    const filePath = path.join(this.rulesDir, '..', 'projects', projectName, 'rules', fileName);
     return this.readIfNonEmpty(filePath);
   }
 

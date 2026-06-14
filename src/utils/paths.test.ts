@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import path from 'node:path';
 
 // Dynamic import so we can mock process.cwd before loading the module
 const importPaths = () => import('./paths.js');
@@ -40,8 +39,15 @@ describe('getSourceDir', () => {
 });
 
 describe('getRulesDir', () => {
-  it('returns rules/ directory adjacent to source', async () => {
-    const { getSourceDir, getRulesDir } = await importPaths();
-    expect(getRulesDir()).toBe(path.join(getSourceDir(), '..', '..', 'rules'));
+  it('returns context/rules/ directory', async () => {
+    const { getRulesDir } = await importPaths();
+    expect(getRulesDir()).toMatch(/context\/rules$/);
+  });
+});
+
+describe('getProjectsDir', () => {
+  it('returns context/projects/ directory', async () => {
+    const { getProjectsDir } = await importPaths();
+    expect(getProjectsDir()).toMatch(/context\/projects$/);
   });
 });

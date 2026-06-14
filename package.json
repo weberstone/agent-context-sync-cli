@@ -13,7 +13,7 @@
   },
   "files": [
     "dist/",
-    "rules/"
+    "context/"
   ],
   "scripts": {
     "prepare": "npm run build",

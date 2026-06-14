@@ -274,7 +274,6 @@ export class OrchestratorService {
     boldMagenta: (s: string) => `\x1b[1m\x1b[35m${s}\x1b[39m\x1b[22m`,
     boldYellow: (s: string) => `\x1b[1m\x1b[33m${s}\x1b[39m\x1b[22m`,
   };
-
 }
 
 // ---- Helpers ----

@@ -126,7 +126,7 @@ describe('listPackages', () => {
 
 describe('hasProjectOverride', () => {
   it('returns true when file exists and is non-empty', async () => {
-    await createFile(path.join(rulesDir, 'projects', 'my-app', 'spec.md'), '# Spec');
+    await createFile(path.join(rulesDir, '..', 'projects', 'my-app', 'rules', 'spec.md'), '# Spec');
     const result = await service.hasProjectOverride('my-app', 'spec.md');
     expect(result).toBe(true);
   });
@@ -137,13 +137,13 @@ describe('hasProjectOverride', () => {
   });
 
   it('returns false when file does not exist', async () => {
-    await fs.mkdir(path.join(rulesDir, 'projects', 'my-app'), { recursive: true });
+    await fs.mkdir(path.join(rulesDir, '..', 'projects', 'my-app', 'rules'), { recursive: true });
     const result = await service.hasProjectOverride('my-app', 'spec.md');
     expect(result).toBe(false);
   });
 
   it('returns false when file is empty or whitespace only', async () => {
-    await createFile(path.join(rulesDir, 'projects', 'my-app', 'spec.md'), '   ');
+    await createFile(path.join(rulesDir, '..', 'projects', 'my-app', 'rules', 'spec.md'), '   ');
     const result = await service.hasProjectOverride('my-app', 'spec.md');
     expect(result).toBe(false);
   });
@@ -153,7 +153,10 @@ describe('hasProjectOverride', () => {
 
 describe('getProjectOverride', () => {
   it('returns file content when override exists', async () => {
-    await createFile(path.join(rulesDir, 'projects', 'my-app', 'spec.md'), '# Custom Spec');
+    await createFile(
+      path.join(rulesDir, '..', 'projects', 'my-app', 'rules', 'spec.md'),
+      '# Custom Spec',
+    );
     const result = await service.getProjectOverride('my-app', 'spec.md');
     expect(result).toBe('# Custom Spec');
   });
@@ -164,7 +167,7 @@ describe('getProjectOverride', () => {
   });
 
   it('returns null when override is empty', async () => {
-    await createFile(path.join(rulesDir, 'projects', 'my-app', 'spec.md'), '');
+    await createFile(path.join(rulesDir, '..', 'projects', 'my-app', 'rules', 'spec.md'), '');
     const result = await service.getProjectOverride('my-app', 'spec.md');
     expect(result).toBe(null);
   });

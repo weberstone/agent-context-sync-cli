@@ -1,12 +1,4 @@
-import {
-  intro,
-  outro,
-  cancel,
-  isCancel,
-  confirm,
-  select,
-  multiselect,
-} from './clack-adapter.js';
+import { intro, outro, cancel, isCancel, confirm, select, multiselect } from './clack-adapter.js';
 import type { Architecture } from '../config/config.types.js';
 import type { DiscoveryService } from '../discovery/discovery.service.js';
 import type { Answers } from './prompts.types.js';
@@ -39,10 +31,7 @@ export class PromptService {
     const architecture = await this.stepArchitecture();
     if (architecture === null) return null;
 
-    const userpromptResult = await this.stepUserprompt(
-      architecture,
-      projectName,
-    );
+    const userpromptResult = await this.stepUserprompt(architecture, projectName);
     if (userpromptResult === null) return null;
     const { hasUserprompt, userpromptSource } = userpromptResult;
 
@@ -74,19 +63,14 @@ export class PromptService {
   // ---- Step 2 ----
 
   private async stepCheckSpec(projectName: string): Promise<boolean> {
-    const hasSpec = await this.discovery.hasProjectOverride(
-      projectName,
-      'spec.md',
-    );
+    const hasSpec = await this.discovery.hasProjectOverride(projectName, 'spec.md');
 
     if (hasSpec) return true;
 
     const proceed = await confirm({
       message:
         `📋 No project spec found.\n` +
-        C.dim(
-          `   Create one at rules/projects/${projectName}/spec.md`,
-        ) +
+        C.dim(`   Create one at context/projects/${projectName}/rules/spec.md`) +
         `\n   Continue without it?`,
     });
 
@@ -104,9 +88,7 @@ export class PromptService {
     const available = await this.discovery.getAvailableArchitectures();
 
     if (available.length === 0) {
-      cancel(
-        '❌ No architecture directories found in rules/. At least one is required.',
-      );
+      cancel('❌ No architecture directories found in context/rules/. At least one is required.');
       return null;
     }
 
@@ -117,7 +99,7 @@ export class PromptService {
 
     const choice = await select({
       message: '🏗️  Select project architecture type:',
-      options: options as Parameters<typeof select>[0]['options'],
+      options,
     });
 
     if (isCancelSignal(choice)) {
@@ -137,19 +119,13 @@ export class PromptService {
     hasUserprompt: boolean;
     userpromptSource: 'project' | 'general' | null;
   } | null> {
-    const hasProject = await this.discovery.hasProjectOverride(
-      projectName,
-      'userprompt.md',
-    );
+    const hasProject = await this.discovery.hasProjectOverride(projectName, 'userprompt.md');
 
     if (hasProject) {
       return { hasUserprompt: true, userpromptSource: 'project' };
     }
 
-    const generalContent = await this.discovery.getArchFile(
-      architecture,
-      'userprompt.md',
-    );
+    const generalContent = await this.discovery.getArchFile(architecture, 'userprompt.md');
 
     if (generalContent !== null) {
       return { hasUserprompt: true, userpromptSource: 'general' };
@@ -160,7 +136,7 @@ export class PromptService {
         `🧠 Userprompt file not found.\n` +
         C.yellow(
           '   It is highly recommended to define the AI persona.\n' +
-            `   Create rules/${architecture}/userprompt.md`,
+            `   Create context/rules/${architecture}/userprompt.md`,
         ) +
         `\n   Continue without it?`,
     });
@@ -175,18 +151,14 @@ export class PromptService {
 
   // ---- Step 4 ----
 
-  private async stepFrameworks(
-    architecture: Architecture,
-  ): Promise<string[] | null> {
+  private async stepFrameworks(architecture: Architecture): Promise<string[] | null> {
     const available = await this.discovery.listFrameworks(architecture);
 
     if (available.length === 0) {
       const proceed = await confirm({
         message:
           `📦 No framework rules found.\n` +
-          C.dim(
-            `   Add .md files to rules/${architecture}/frameworks/`,
-          ) +
+          C.dim(`   Add .md files to context/rules/${architecture}/frameworks/`) +
           `\n   Continue without framework rules?`,
       });
 
@@ -203,7 +175,7 @@ export class PromptService {
     if (architecture === 'fullstack') {
       const choices = await multiselect({
         message: '📦 Select frameworks (fullstack — multiple allowed):',
-        options: options as Parameters<typeof multiselect>[0]['options'],
+        options,
       });
 
       if (isCancelSignal(choices)) {
@@ -216,7 +188,7 @@ export class PromptService {
 
     const choice = await select({
       message: '📦 Select a framework:',
-      options: options as Parameters<typeof select>[0]['options'],
+      options,
     });
 
     if (isCancelSignal(choice)) {
@@ -229,18 +201,14 @@ export class PromptService {
 
   // ---- Step 5 ----
 
-  private async stepPackages(
-    architecture: Architecture,
-  ): Promise<string[] | null> {
+  private async stepPackages(architecture: Architecture): Promise<string[] | null> {
     const available = await this.discovery.listPackages(architecture);
 
     if (available.length === 0) {
       const proceed = await confirm({
         message:
           `📚 No package rules found.\n` +
-          C.dim(
-            `   Add .md files to rules/${architecture}/packages/`,
-          ) +
+          C.dim(`   Add .md files to context/rules/${architecture}/packages/`) +
           `\n   Continue without package rules?`,
       });
 
@@ -256,7 +224,7 @@ export class PromptService {
 
     const choices = await multiselect({
       message: '📚 Select packages and tools:',
-      options: options as Parameters<typeof multiselect>[0]['options'],
+      options,
       required: false,
     });
 
@@ -274,26 +242,18 @@ export class PromptService {
     architecture: Architecture,
     projectName: string,
   ): Promise<'project' | 'general' | null> {
-    const hasProject = await this.discovery.hasProjectOverride(
-      projectName,
-      'workflow.md',
-    );
+    const hasProject = await this.discovery.hasProjectOverride(projectName, 'workflow.md');
 
     if (hasProject) return 'project';
 
-    const generalContent = await this.discovery.getArchFile(
-      architecture,
-      'workflow.md',
-    );
+    const generalContent = await this.discovery.getArchFile(architecture, 'workflow.md');
 
     if (generalContent !== null) return 'general';
 
     const proceed = await confirm({
       message:
         `⚙️  Workflow file not found.\n` +
-        C.dim(
-          `   Create rules/${architecture}/workflow.md`,
-        ) +
+        C.dim(`   Create context/rules/${architecture}/workflow.md`) +
         `\n   Continue without workflow rules?`,
     });
 
@@ -315,7 +275,7 @@ export class PromptService {
 
     const choices = await multiselect({
       message: '🤖 Select AI agents to generate config files for:',
-      options: options as Parameters<typeof multiselect>[0]['options'],
+      options,
       required: false,
     });
 
