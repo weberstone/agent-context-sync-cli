@@ -32,7 +32,7 @@ export class CompilerService {
       await this.compileSpec(projectName),
       await this.compileArchitecture(answers, projectName),
       ...(await this.compileFrameworks(answers, projectName)),
-      await this.compilePackageRules(answers),
+      await this.compilePackageRules(answers, projectName),
     ];
 
     return results.filter((f): f is CompiledFile => f !== null);
@@ -110,12 +110,17 @@ export class CompilerService {
     return results;
   }
 
-  /**
-   * Package rules: concatenation of selected package files.
-   * Header `# Code Style & Tools`, content separated by `\n\n`.
-   * If nothing selected → `null` (file not created).
-   */
-  private async compilePackageRules(answers: Answers): Promise<CompiledFile | null> {
+  /** Package rules: project override → general concatenation. */
+  private async compilePackageRules(
+    answers: Answers,
+    projectName: string,
+  ): Promise<CompiledFile | null> {
+    if (answers.hasProjectPackages) {
+      const content = await this.discovery.getProjectOverride(projectName, 'package-rules.md');
+      if (content === null) return null;
+      return { filename: 'package-rules.md', content };
+    }
+
     if (answers.packages.length === 0) return null;
 
     const parts: string[] = [];

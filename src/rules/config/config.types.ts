@@ -37,6 +37,7 @@ export interface Config {
   workflowFile: string | null;
   workflowSource: 'project' | 'general' | null;
   hasProjectFramework: boolean;
+  hasProjectPackages: boolean;
   syncSkills: boolean;
   skills: string[];
   lastSync: string;

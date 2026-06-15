@@ -41,6 +41,7 @@ const REQUIRED_FIELDS: ReadonlyArray<keyof Config> = [
   'workflowFile',
   'workflowSource',
   'hasProjectFramework',
+  'hasProjectPackages',
   'syncSkills',
   'skills',
   'lastSync',
@@ -199,6 +200,10 @@ export class ConfigService {
       throw new Error('"hasProjectFramework" must be a boolean');
     }
 
+    if (typeof obj.hasProjectPackages !== 'boolean') {
+      throw new Error('"hasProjectPackages" must be a boolean');
+    }
+
     if (typeof obj.syncSkills !== 'boolean') {
       throw new Error('"syncSkills" must be a boolean');
     }
@@ -233,6 +238,7 @@ export class ConfigService {
     if (!('workflowFile' in result)) result.workflowFile = null;
     if (!('workflowSource' in result)) result.workflowSource = null;
     if (!('hasProjectFramework' in result)) result.hasProjectFramework = false;
+    if (!('hasProjectPackages' in result)) result.hasProjectPackages = false;
     return result;
   }
 }

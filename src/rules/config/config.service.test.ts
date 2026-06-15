@@ -25,6 +25,7 @@ const validConfig: Config = {
   workflowFile: 'base-workflow',
   workflowSource: 'general',
   hasProjectFramework: false,
+  hasProjectPackages: false,
   syncSkills: true,
   skills: ['angular-developer'],
   lastSync: '2026-06-14T12:00:00Z',
@@ -166,6 +167,7 @@ describe('backward compatibility', () => {
     expect(result!.workflowFile).toBe(null);
     expect(result!.workflowSource).toBe(null);
     expect(result!.hasProjectFramework).toBe(false);
+    expect(result!.hasProjectPackages).toBe(false);
   });
 });
 

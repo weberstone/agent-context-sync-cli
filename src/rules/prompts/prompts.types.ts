@@ -41,6 +41,7 @@ export interface Answers {
   architectureFile: string | null;
   hasProjectFramework: boolean;
   frameworks: string[];
+  hasProjectPackages: boolean;
   packages: string[];
   hasWorkflow: boolean;
   workflowSource: 'project' | 'general' | null;

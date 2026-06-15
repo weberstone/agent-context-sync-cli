@@ -277,6 +277,7 @@ export class OrchestratorService {
       workflowSource,
       workflowFile: config.workflowFile ?? null,
       hasProjectFramework: config.hasProjectFramework,
+      hasProjectPackages: config.hasProjectPackages,
       frameworks: config.frameworks,
       packages: config.packages,
       agents: config.agents,
@@ -465,6 +466,25 @@ export class OrchestratorService {
         rulesAnswers.hasProjectFramework = choice === 'project';
       }
     }
+
+    // package-rules conflict: project override file vs general packages/ folder
+    const hasProjectPkg = await this.discovery.hasProjectOverride(projectName, 'package-rules.md');
+    const generalPackages = await this.discovery.listPackages(arch);
+    const hasGeneralPackages = generalPackages.length > 0;
+
+    if (hasProjectPkg && hasGeneralPackages) {
+      const choice = await select({
+        message:
+          'package-rules.md exists in both project (package-rules.md) and general (packages/). Which one to use?',
+        options: [
+          { value: 'project', label: 'Project version (package-rules.md)' },
+          { value: 'general', label: 'General (choose from packages/)' },
+        ],
+      });
+      if (!isCancel(choice)) {
+        rulesAnswers.hasProjectPackages = choice === 'project';
+      }
+    }
   }
 
   private async resolveWriteMode(
@@ -634,6 +654,7 @@ function buildConfig(answers: Record<string, unknown>, projectName: string): Con
     workflowFile: (answers.workflowFile as string) ?? null,
     workflowSource: (answers.workflowSource as 'project' | 'general' | null) ?? null,
     hasProjectFramework: (answers.hasProjectFramework as boolean) ?? false,
+    hasProjectPackages: (answers.hasProjectPackages as boolean) ?? false,
     syncSkills: (answers.syncSkills as boolean) ?? false,
     skills: (answers.skills as string[]) ?? [],
     lastSync: new Date().toISOString(),
