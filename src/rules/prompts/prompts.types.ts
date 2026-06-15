@@ -20,7 +20,9 @@ export const AVAILABLE_AGENTS: readonly AgentOption[] = [
   { value: 'gemini', label: 'Gemini' },
   { value: 'gemini-cli', label: 'Gemini CLI' },
   { value: 'codex', label: 'OpenAI Codex' },
+  { value: 'github-copilot', label: 'GitHub Copilot' },
   { value: 'continue', label: 'Continue' },
+  { value: 'windsurf', label: 'Windsurf / Devin' },
 ];
 
 /**
@@ -35,9 +37,16 @@ export interface Answers {
   architecture: Architecture;
   hasUserprompt: boolean;
   userpromptSource: 'project' | 'general' | null;
-  architectureSource?: 'project' | 'general';
+  userpromptFile: string | null;
+  hasArchitecture: boolean;
+  architectureSource: 'project' | 'general' | null;
+  architectureFile: string | null;
+  hasProjectFramework: boolean;
   frameworks: string[];
+  hasProjectPackages: boolean;
   packages: string[];
+  hasWorkflow: boolean;
   workflowSource: 'project' | 'general' | null;
+  workflowFile: string | null;
   agents: string[];
 }

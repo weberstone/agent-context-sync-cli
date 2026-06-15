@@ -22,7 +22,7 @@ import {
   multiselect,
 } from '../rules/prompts/clack-adapter.js';
 import { ConfigService } from '../rules/config/config.service.js';
-import type { Config } from '../rules/config/config.types.js';
+import type { Architecture, Config } from '../rules/config/config.types.js';
 import { DiscoveryService } from '../rules/discovery/discovery.service.js';
 import { PromptService } from '../rules/prompts/prompts.service.js';
 import type { Answers } from '../rules/prompts/prompts.types.js';
@@ -45,6 +45,7 @@ const KNOWN_RULE_FILES = new Set([
   'workflow.md',
   'spec.md',
   'architecture.md',
+  'framework.md',
   'package-rules.md',
 ]);
 
@@ -159,7 +160,8 @@ export class OrchestratorService {
     // 8. Grand finale (TTY only — non-TTY gets plain output)
     if (process.stdin.isTTY) {
       this.showFinale(ruleFiles, writtenFiles, copiedSkills);
-      this.showGitignoreWarning();
+      await this.showGitignoreWarning();
+      this.showStarRequest();
     } else {
       console.log('Rules synchronized successfully.');
       if (ruleFiles.length > 0) console.log(`.agents/rules/: ${ruleFiles.length} files`);
@@ -242,29 +244,43 @@ export class OrchestratorService {
       config.projectName,
       'workflow.md',
     );
-    const hasGeneralWorkflow = await this.discovery.isFileNonEmpty(
-      `${this.rulesDir}/${arch}/workflow.md`,
+    const hasProjectArchitecture = await this.discovery.hasProjectOverride(
+      config.projectName,
+      'architecture.md',
     );
 
     let userpromptSource: 'project' | 'general' | null = null;
     if (config.hasUserprompt) {
-      userpromptSource = hasProjectUserprompt ? 'project' : 'general';
+      userpromptSource = hasProjectUserprompt ? 'project' : (config.userpromptSource ?? 'general');
+    }
+
+    let architectureSource: 'project' | 'general' | null = null;
+    if (config.hasArchitecture) {
+      architectureSource = hasProjectArchitecture
+        ? 'project'
+        : (config.architectureSource ?? 'general');
     }
 
     let workflowSource: 'project' | 'general' | null = null;
-    if (hasProjectWorkflow) {
-      workflowSource = 'project';
-    } else if (hasGeneralWorkflow) {
-      workflowSource = 'general';
+    if (config.hasWorkflow) {
+      workflowSource = hasProjectWorkflow ? 'project' : (config.workflowSource ?? 'general');
     }
 
     return {
       architecture: arch,
       hasUserprompt: config.hasUserprompt,
       userpromptSource,
+      userpromptFile: config.userpromptFile ?? null,
+      hasArchitecture: config.hasArchitecture,
+      architectureSource,
+      architectureFile: config.architectureFile ?? null,
+      hasWorkflow: config.hasWorkflow,
+      workflowSource,
+      workflowFile: config.workflowFile ?? null,
+      hasProjectFramework: config.hasProjectFramework,
+      hasProjectPackages: config.hasProjectPackages,
       frameworks: config.frameworks,
       packages: config.packages,
-      workflowSource,
       agents: config.agents,
       syncSkills: config.syncSkills,
       skills: config.skills,
@@ -328,63 +344,163 @@ export class OrchestratorService {
     const arch = rulesAnswers.architecture;
     const projectName = this.projectName;
 
-    // userprompt conflict
-    const hasProjectUserprompt = await this.discovery.hasProjectOverride(
+    await this.resolveFolderConflict({
+      rulesAnswers,
       projectName,
-      'userprompt.md',
-    );
-    const hasGeneralUserprompt = (await this.discovery.getArchFile(arch, 'userprompt.md')) !== null;
-
-    if (hasProjectUserprompt && hasGeneralUserprompt) {
-      const choice = await select({
-        message: 'userprompt.md exists in both project and general. Which one to use?',
-        options: [
-          { value: 'project', label: 'Project version' },
-          { value: 'general', label: 'General version' },
-        ],
-      });
-      if (!isCancel(choice)) {
-        rulesAnswers.userpromptSource = choice as 'project' | 'general';
+      arch,
+      fileName: 'userprompt.md',
+      folderName: 'userprompts',
+      listFn: (a) => this.discovery.listUserprompts(a),
+      selectMessage: 'Select a userprompt from the general folder:',
+      applyProject: () => {
+        rulesAnswers.userpromptSource = 'project';
+        rulesAnswers.userpromptFile = null;
         rulesAnswers.hasUserprompt = true;
-      }
-    }
+      },
+      applyGeneral: (file) => {
+        rulesAnswers.userpromptSource = 'general';
+        rulesAnswers.userpromptFile = file;
+        rulesAnswers.hasUserprompt = true;
+      },
+    });
 
-    // architecture conflict
-    const hasProjectArch = await this.discovery.hasProjectOverride(projectName, 'architecture.md');
-    const hasGeneralArch = (await this.discovery.getArchFile(arch, 'architecture.md')) !== null;
+    await this.resolveFolderConflict({
+      rulesAnswers,
+      projectName,
+      arch,
+      fileName: 'architecture.md',
+      folderName: 'architectures',
+      listFn: (a) => this.discovery.listArchitectures(a),
+      selectMessage: 'Select architecture guidelines from the general folder:',
+      applyProject: () => {
+        rulesAnswers.architectureSource = 'project';
+        rulesAnswers.architectureFile = null;
+        rulesAnswers.hasArchitecture = true;
+      },
+      applyGeneral: (file) => {
+        rulesAnswers.architectureSource = 'general';
+        rulesAnswers.architectureFile = file;
+        rulesAnswers.hasArchitecture = true;
+      },
+    });
 
-    if (hasProjectArch && hasGeneralArch) {
-      const choice = await select({
-        message: 'architecture.md exists in both project and general. Which one to use?',
-        options: [
-          { value: 'project', label: 'Project version' },
-          { value: 'general', label: 'General version' },
-        ],
-      });
-      if (!isCancel(choice)) {
-        rulesAnswers.architectureSource = choice as 'project' | 'general';
-      }
-    }
+    await this.resolveFolderConflict({
+      rulesAnswers,
+      projectName,
+      arch,
+      fileName: 'workflow.md',
+      folderName: 'workflows',
+      listFn: (a) => this.discovery.listWorkflows(a),
+      selectMessage: 'Select a workflow from the general folder:',
+      applyProject: () => {
+        rulesAnswers.workflowSource = 'project';
+        rulesAnswers.workflowFile = null;
+        rulesAnswers.hasWorkflow = true;
+      },
+      applyGeneral: (file) => {
+        rulesAnswers.workflowSource = 'general';
+        rulesAnswers.workflowFile = file;
+        rulesAnswers.hasWorkflow = true;
+      },
+    });
 
-    // workflow conflict
-    const hasProjectWf = await this.discovery.hasProjectOverride(projectName, 'workflow.md');
-    const hasGeneralWf = (await this.discovery.getArchFile(arch, 'workflow.md')) !== null;
+    // framework and package-rules use a simpler boolean-toggle conflict
+    await this.resolveSimpleConflict({
+      projectName,
+      arch,
+      fileName: 'framework.md',
+      folderName: 'frameworks',
+      listFn: (a) => this.discovery.listFrameworks(a),
+      onResult: (useProject) => {
+        rulesAnswers.hasProjectFramework = useProject;
+      },
+    });
 
-    if (hasProjectWf && hasGeneralWf) {
-      const choice = await select({
-        message: 'workflow.md exists in both project and general. Which one to use?',
-        options: [
-          { value: 'project', label: 'Project version' },
-          { value: 'general', label: 'General version' },
-        ],
-      });
-      if (!isCancel(choice)) {
-        rulesAnswers.workflowSource = choice as 'project' | 'general';
+    await this.resolveSimpleConflict({
+      projectName,
+      arch,
+      fileName: 'package-rules.md',
+      folderName: 'packages',
+      listFn: (a) => this.discovery.listPackages(a),
+      onResult: (useProject) => {
+        rulesAnswers.hasProjectPackages = useProject;
+      },
+    });
+  }
+
+  private async resolveFolderConflict(params: {
+    rulesAnswers: Answers;
+    projectName: string;
+    arch: Architecture;
+    fileName: string;
+    folderName: string;
+    listFn: (arch: Architecture) => Promise<string[]>;
+    selectMessage: string;
+    applyProject: () => void;
+    applyGeneral: (file: string) => void;
+  }): Promise<void> {
+    const {
+      projectName,
+      arch,
+      fileName,
+      folderName,
+      listFn,
+      selectMessage,
+      applyProject,
+      applyGeneral,
+    } = params;
+    const hasProject = await this.discovery.hasProjectOverride(projectName, fileName);
+    const items = await listFn(arch);
+
+    if (!hasProject || items.length === 0) return;
+
+    const choice = await select({
+      message: `${fileName} exists in both project (${fileName}) and general (${folderName}/). Which one to use?`,
+      options: [
+        { value: 'project', label: `Project version (${fileName})` },
+        { value: 'general', label: `General (choose from ${folderName}/)` },
+      ],
+    });
+
+    if (isCancel(choice)) return;
+
+    if (choice === 'project') {
+      applyProject();
+    } else {
+      const fileOptions = items.map((name) => ({ value: name, label: name }));
+      const fileChoice = await select({ message: selectMessage, options: fileOptions });
+      if (!isCancel(fileChoice)) {
+        applyGeneral(fileChoice);
       }
     }
   }
 
-  // ---- Agent file conflict resolution ----
+  private async resolveSimpleConflict(params: {
+    projectName: string;
+    arch: Architecture;
+    fileName: string;
+    folderName: string;
+    listFn: (arch: Architecture) => Promise<string[]>;
+    onResult: (useProject: boolean) => void;
+  }): Promise<void> {
+    const { projectName, arch, fileName, folderName, listFn, onResult } = params;
+    const hasProject = await this.discovery.hasProjectOverride(projectName, fileName);
+    const items = await listFn(arch);
+
+    if (!hasProject || items.length === 0) return;
+
+    const choice = await select({
+      message: `${fileName} exists in both project (${fileName}) and general (${folderName}/). Which one to use?`,
+      options: [
+        { value: 'project', label: `Project version (${fileName})` },
+        { value: 'general', label: `General (choose from ${folderName}/)` },
+      ],
+    });
+
+    if (!isCancel(choice)) {
+      onResult(choice === 'project');
+    }
+  }
 
   private async resolveWriteMode(
     filename: string,
@@ -486,24 +602,38 @@ export class OrchestratorService {
 
   private async showGitignoreWarning(): Promise<void> {
     const pc = this.colors;
-    const inGitignore = await this.output.isInGitignore('ai-rules-config.json');
+    const inGitignore = await this.output.isInGitignore('ai-context-config.json');
     if (!inGitignore) {
-      const lines: string[] = [
-        this.hr(pc.boldYellow),
-        this.padLine('  ⚠️  IMPORTANT', pc.boldYellow),
-        '',
-        this.padLine('  Add "ai-rules-config.json"', pc.yellow),
-        this.padLine('  to your .gitignore file', pc.yellow),
-        this.padLine('  to keep it private.', pc.yellow),
-      ];
-
-      outro(lines.join('\n'));
+      console.log('');
+      console.log(
+        this.padLine('ℹ️  "ai-context-config.json" was created to store your preferences.', pc.dim),
+      );
+      console.log(
+        this.padLine("   If you don't want to commit it, add it to your .gitignore file.", pc.dim),
+      );
     }
+  }
+
+  private showStarRequest(): void {
+    const pc = this.colors;
+    console.log('');
+    console.log(this.hr(pc.boldMagenta));
+    console.log(this.padLine('🌟 LOVE THIS TOOL?', pc.boldMagenta));
+    console.log('');
+    console.log(this.padLine('If this tool helps you build better projects,', pc.magenta));
+    console.log(this.padLine('please consider giving us a star on GitHub!', pc.magenta));
+    console.log('');
+    console.log(
+      this.padLine('👉 https://github.com/weberstone/agent-context-sync-cli', pc.boldCyan),
+    );
+    console.log(this.hr(pc.boldMagenta));
+    console.log('');
   }
 
   private colors = {
     dim: (s: string) => `\x1b[2m${s}\x1b[22m`,
     cyan: (s: string) => `\x1b[36m${s}\x1b[39m`,
+    boldCyan: (s: string) => `\x1b[1m\x1b[36m${s}\x1b[39m\x1b[22m`,
     green: (s: string) => `\x1b[32m${s}\x1b[39m`,
     magenta: (s: string) => `\x1b[35m${s}\x1b[39m`,
     yellow: (s: string) => `\x1b[33m${s}\x1b[39m`,
@@ -544,6 +674,16 @@ function buildConfig(answers: Record<string, unknown>, projectName: string): Con
     packages: (answers.packages as string[]) ?? [],
     agents: (answers.agents as string[]) ?? [],
     hasUserprompt: (answers.hasUserprompt as boolean) ?? false,
+    userpromptFile: (answers.userpromptFile as string) ?? null,
+    userpromptSource: (answers.userpromptSource as 'project' | 'general' | null) ?? null,
+    hasArchitecture: (answers.hasArchitecture as boolean) ?? false,
+    architectureFile: (answers.architectureFile as string) ?? null,
+    architectureSource: (answers.architectureSource as 'project' | 'general' | null) ?? null,
+    hasWorkflow: (answers.hasWorkflow as boolean) ?? false,
+    workflowFile: (answers.workflowFile as string) ?? null,
+    workflowSource: (answers.workflowSource as 'project' | 'general' | null) ?? null,
+    hasProjectFramework: (answers.hasProjectFramework as boolean) ?? false,
+    hasProjectPackages: (answers.hasProjectPackages as boolean) ?? false,
     syncSkills: (answers.syncSkills as boolean) ?? false,
     skills: (answers.skills as string[]) ?? [],
     lastSync: new Date().toISOString(),

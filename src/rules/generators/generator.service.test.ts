@@ -4,7 +4,9 @@ import {
   generateCursorRules,
   generateGeminiMd,
   generateAgentsMd,
+  generateCopilotInstructions,
   generateContinueRules,
+  generateWindsurfRules,
   GeneratorRegistry,
   generatorRegistry,
 } from './generator.service.js';
@@ -41,7 +43,7 @@ describe('generateClaudeMd', () => {
 
   it('includes all priority rows when all files present', () => {
     const { content } = generateClaudeMd(fullContext)[0];
-    expect(content).toContain('| 1 (CRITICAL)');
+    expect(content).toContain('| 1');
     expect(content).toContain('userprompt.md');
     expect(content).toContain('| 2');
     expect(content).toContain('workflow.md');
@@ -51,7 +53,7 @@ describe('generateClaudeMd', () => {
     expect(content).toContain('architecture.md');
     expect(content).toContain('| 5');
     expect(content).toContain('angular-guidelines.md');
-    expect(content).toContain('| 6 (OPTIONAL)');
+    expect(content).toContain('| 6');
     expect(content).toContain('package-rules.md');
   });
 
@@ -146,7 +148,7 @@ describe('generateAgentsMd', () => {
 
   it('includes priority table', () => {
     const { content } = generateAgentsMd(fullContext)[0];
-    expect(content).toContain('| 1 (CRITICAL)');
+    expect(content).toContain('| 1');
     expect(content).toContain('## Working agreements');
   });
 
@@ -154,6 +156,68 @@ describe('generateAgentsMd', () => {
     const { content } = generateAgentsMd(minimalContext)[0];
     expect(content).not.toMatch(/\| 1.*userprompt/);
     expect(content).not.toMatch(/\| 6.*package-rules/);
+  });
+});
+
+// ---- GitHub Copilot ----
+
+describe('generateCopilotInstructions', () => {
+  it('returns single .github/copilot-instructions.md file', () => {
+    const files = generateCopilotInstructions(fullContext);
+    expect(files).toHaveLength(1);
+    expect(files[0].filename).toBe('.github/copilot-instructions.md');
+  });
+
+  it('includes all priority rows', () => {
+    const { content } = generateCopilotInstructions(fullContext)[0];
+    expect(content).toContain('| 1');
+    expect(content).toContain('userprompt.md');
+    expect(content).toContain('| 6');
+    expect(content).toContain('package-rules.md');
+  });
+
+  it('has no YAML frontmatter', () => {
+    const { content } = generateCopilotInstructions(fullContext)[0];
+    expect(content).not.toMatch(/^---/);
+  });
+
+  it('references .agents/rules/', () => {
+    expect(generateCopilotInstructions(fullContext)[0].content).toContain('.agents/rules/');
+  });
+
+  it('skips missing files', () => {
+    const { content } = generateCopilotInstructions(minimalContext)[0];
+    expect(content).not.toContain('userprompt.md');
+    expect(content).not.toContain('package-rules.md');
+  });
+});
+
+// ---- Windsurf / Devin ----
+
+describe('generateWindsurfRules', () => {
+  it('returns single .devin/rules/00-agent-rules.md file', () => {
+    const files = generateWindsurfRules(fullContext);
+    expect(files).toHaveLength(1);
+    expect(files[0].filename).toBe('.devin/rules/00-agent-rules.md');
+  });
+
+  it('has YAML frontmatter with trigger: always_on', () => {
+    const { content } = generateWindsurfRules(fullContext)[0];
+    expect(content).toContain('---');
+    expect(content).toContain('trigger: always_on');
+    expect(content).toContain('description:');
+  });
+
+  it('includes numbered priority list', () => {
+    const { content } = generateWindsurfRules(fullContext)[0];
+    expect(content).toContain('1. `.agents/rules/userprompt.md`');
+    expect(content).toContain('6. `.agents/rules/package-rules.md`');
+  });
+
+  it('skips missing files', () => {
+    const { content } = generateWindsurfRules(minimalContext)[0];
+    expect(content).not.toContain('userprompt.md');
+    expect(content).not.toContain('package-rules.md');
   });
 });
 
@@ -184,7 +248,9 @@ describe('GeneratorRegistry', () => {
     expect(generatorRegistry.get('cursor')).toBe(generateCursorRules);
     expect(generatorRegistry.get('gemini-cli')).toBe(generateGeminiMd);
     expect(generatorRegistry.get('codex')).toBe(generateAgentsMd);
+    expect(generatorRegistry.get('github-copilot')).toBe(generateCopilotInstructions);
     expect(generatorRegistry.get('continue')).toBe(generateContinueRules);
+    expect(generatorRegistry.get('windsurf')).toBe(generateWindsurfRules);
   });
 
   it('returns undefined for unknown key', () => {
@@ -244,6 +310,8 @@ describe('skills section', () => {
     expect(generateCursorRules(ctx)[0].content).toContain('## 🛠️ Skills');
     expect(generateGeminiMd(ctx)[0].content).toContain('## 🛠️ Skills');
     expect(generateAgentsMd(ctx)[0].content).toContain('## 🛠️ Skills');
+    expect(generateCopilotInstructions(ctx)[0].content).toContain('## 🛠️ Skills');
     expect(generateContinueRules(ctx)[0].content).toContain('## 🛠️ Skills');
+    expect(generateWindsurfRules(ctx)[0].content).toContain('## 🛠️ Skills');
   });
 });

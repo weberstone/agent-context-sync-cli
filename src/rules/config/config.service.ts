@@ -1,5 +1,5 @@
 /**
- * Reads, writes, and validates `ai-rules-config.json`.
+ * Reads, writes, and validates `ai-context-config.json`.
  *
  * The config file persists the user's questionnaire answers so that
  * subsequent runs can skip the interactive prompts and regenerate rules
@@ -16,7 +16,7 @@ import { readTextFile, writeTextFile } from '../../utils/fs.js';
 import { logWarning } from '../../utils/log.js';
 import type { Config, Architecture } from './config.types.js';
 
-const CONFIG_FILENAME = 'ai-rules-config.json';
+const CONFIG_FILENAME = 'ai-context-config.json';
 
 const VALID_ARCHITECTURES: ReadonlySet<string> = new Set<Architecture>([
   'frontend',
@@ -32,6 +32,16 @@ const REQUIRED_FIELDS: ReadonlyArray<keyof Config> = [
   'packages',
   'agents',
   'hasUserprompt',
+  'userpromptFile',
+  'userpromptSource',
+  'hasArchitecture',
+  'architectureFile',
+  'architectureSource',
+  'hasWorkflow',
+  'workflowFile',
+  'workflowSource',
+  'hasProjectFramework',
+  'hasProjectPackages',
   'syncSkills',
   'skills',
   'lastSync',
@@ -142,6 +152,58 @@ export class ConfigService {
       throw new Error('"hasUserprompt" must be a boolean');
     }
 
+    if (obj.userpromptFile !== null && typeof obj.userpromptFile !== 'string') {
+      throw new Error('"userpromptFile" must be a string or null');
+    }
+
+    if (
+      obj.userpromptSource !== null &&
+      obj.userpromptSource !== 'project' &&
+      obj.userpromptSource !== 'general'
+    ) {
+      throw new Error('"userpromptSource" must be "project", "general", or null');
+    }
+
+    if (typeof obj.hasArchitecture !== 'boolean') {
+      throw new Error('"hasArchitecture" must be a boolean');
+    }
+
+    if (obj.architectureFile !== null && typeof obj.architectureFile !== 'string') {
+      throw new Error('"architectureFile" must be a string or null');
+    }
+
+    if (
+      obj.architectureSource !== null &&
+      obj.architectureSource !== 'project' &&
+      obj.architectureSource !== 'general'
+    ) {
+      throw new Error('"architectureSource" must be "project", "general", or null');
+    }
+
+    if (typeof obj.hasWorkflow !== 'boolean') {
+      throw new Error('"hasWorkflow" must be a boolean');
+    }
+
+    if (obj.workflowFile !== null && typeof obj.workflowFile !== 'string') {
+      throw new Error('"workflowFile" must be a string or null');
+    }
+
+    if (
+      obj.workflowSource !== null &&
+      obj.workflowSource !== 'project' &&
+      obj.workflowSource !== 'general'
+    ) {
+      throw new Error('"workflowSource" must be "project", "general", or null');
+    }
+
+    if (typeof obj.hasProjectFramework !== 'boolean') {
+      throw new Error('"hasProjectFramework" must be a boolean');
+    }
+
+    if (typeof obj.hasProjectPackages !== 'boolean') {
+      throw new Error('"hasProjectPackages" must be a boolean');
+    }
+
     if (typeof obj.syncSkills !== 'boolean') {
       throw new Error('"syncSkills" must be a boolean');
     }
@@ -167,6 +229,16 @@ export class ConfigService {
     const result = { ...obj };
     if (!('syncSkills' in result)) result.syncSkills = false;
     if (!('skills' in result)) result.skills = [];
+    if (!('userpromptFile' in result)) result.userpromptFile = null;
+    if (!('userpromptSource' in result)) result.userpromptSource = null;
+    if (!('hasArchitecture' in result)) result.hasArchitecture = false;
+    if (!('architectureFile' in result)) result.architectureFile = null;
+    if (!('architectureSource' in result)) result.architectureSource = null;
+    if (!('hasWorkflow' in result)) result.hasWorkflow = false;
+    if (!('workflowFile' in result)) result.workflowFile = null;
+    if (!('workflowSource' in result)) result.workflowSource = null;
+    if (!('hasProjectFramework' in result)) result.hasProjectFramework = false;
+    if (!('hasProjectPackages' in result)) result.hasProjectPackages = false;
     return result;
   }
 }

@@ -89,12 +89,53 @@ export class DiscoveryService {
   }
 
   /**
-   * Read a file directly under an architecture directory.
-   * Path: `context/rules/<arch>/<filename>`
-   * Used for `userprompt.md`, `architecture.md`, `workflow.md`.
+   * List `.md` files in `context/rules/<arch>/userprompts/`, sans extension.
+   * Returns [] if the directory doesn't exist or is empty.
    */
-  async getArchFile(arch: Architecture, filename: string): Promise<string | null> {
-    const filePath = path.join(this.rulesDir, arch, filename);
+  async listUserprompts(arch: Architecture): Promise<string[]> {
+    return this.listDir(path.join(this.rulesDir, arch, 'userprompts'));
+  }
+
+  /**
+   * Read a specific userprompt file from `context/rules/<arch>/userprompts/<name>.md`.
+   * Returns `null` if the file doesn't exist or is empty.
+   */
+  async getUserpromptContent(arch: Architecture, name: string): Promise<string | null> {
+    const filePath = path.join(this.rulesDir, arch, 'userprompts', `${name}.md`);
+    return this.readIfNonEmpty(filePath);
+  }
+
+  /**
+   * List `.md` files in `context/rules/<arch>/architectures/`, sans extension.
+   * Returns [] if the directory doesn't exist or is empty.
+   */
+  async listArchitectures(arch: Architecture): Promise<string[]> {
+    return this.listDir(path.join(this.rulesDir, arch, 'architectures'));
+  }
+
+  /**
+   * Read a specific architecture file from `context/rules/<arch>/architectures/<name>.md`.
+   * Returns `null` if the file doesn't exist or is empty.
+   */
+  async getArchitectureContent(arch: Architecture, name: string): Promise<string | null> {
+    const filePath = path.join(this.rulesDir, arch, 'architectures', `${name}.md`);
+    return this.readIfNonEmpty(filePath);
+  }
+
+  /**
+   * List `.md` files in `context/rules/<arch>/workflows/`, sans extension.
+   * Returns [] if the directory doesn't exist or is empty.
+   */
+  async listWorkflows(arch: Architecture): Promise<string[]> {
+    return this.listDir(path.join(this.rulesDir, arch, 'workflows'));
+  }
+
+  /**
+   * Read a specific workflow file from `context/rules/<arch>/workflows/<name>.md`.
+   * Returns `null` if the file doesn't exist or is empty.
+   */
+  async getWorkflowContent(arch: Architecture, name: string): Promise<string | null> {
+    const filePath = path.join(this.rulesDir, arch, 'workflows', `${name}.md`);
     return this.readIfNonEmpty(filePath);
   }
 

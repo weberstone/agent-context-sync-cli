@@ -51,16 +51,23 @@ export class PromptService {
 
     const userpromptResult = await this.stepUserprompt(architecture, projectName);
     if (userpromptResult === null) return null;
-    const { hasUserprompt, userpromptSource } = userpromptResult;
+    const { hasUserprompt, userpromptSource, userpromptFile } = userpromptResult;
 
-    const frameworks = await this.stepFrameworks(architecture);
-    if (frameworks === null) return null;
+    const architectureResult = await this.stepArchitectureFile(architecture, projectName);
+    if (architectureResult === null) return null;
+    const { hasArchitecture, architectureSource, architectureFile } = architectureResult;
 
-    const packages = await this.stepPackages(architecture);
-    if (packages === null) return null;
+    const frameworksResult = await this.stepFrameworks(architecture, projectName);
+    if (frameworksResult === null) return null;
+    const { frameworks, hasProjectFramework } = frameworksResult;
 
-    const workflowSource = await this.stepWorkflow(architecture, projectName);
-    if (workflowSource === null) return null;
+    const packagesResult = await this.stepPackages(architecture, projectName);
+    if (packagesResult === null) return null;
+    const { packages, hasProjectPackages } = packagesResult;
+
+    const workflowResult = await this.stepWorkflow(architecture, projectName);
+    if (workflowResult === null) return null;
+    const { hasWorkflow, workflowSource, workflowFile } = workflowResult;
 
     outro('✨ Configuration complete!');
 
@@ -68,9 +75,17 @@ export class PromptService {
       architecture,
       hasUserprompt,
       userpromptSource,
-      frameworks,
-      packages,
+      userpromptFile,
+      hasArchitecture,
+      architectureSource,
+      architectureFile,
+      hasWorkflow,
       workflowSource,
+      workflowFile,
+      hasProjectFramework,
+      frameworks,
+      hasProjectPackages,
+      packages,
       agents: [],
     };
   }
@@ -133,8 +148,8 @@ export class PromptService {
   // ---- Step 3b: Userprompt check ----
 
   /**
-   * Check for userprompt.md (project override → general template).
-   * If not found anywhere, warn and ask whether to continue.
+   * Check for userprompt — project override (single file) → general folder (multiple files).
+   * If neither has content, warn and ask whether to continue.
    */
   private async stepUserprompt(
     architecture: Architecture,
@@ -142,25 +157,54 @@ export class PromptService {
   ): Promise<{
     hasUserprompt: boolean;
     userpromptSource: 'project' | 'general' | null;
+    userpromptFile: string | null;
   } | null> {
     const hasProject = await this.discovery.hasProjectOverride(projectName, 'userprompt.md');
+    const available = await this.discovery.listUserprompts(architecture);
 
     if (hasProject) {
-      return { hasUserprompt: true, userpromptSource: 'project' };
+      if (available.length > 0) {
+        const useProject = await confirm({
+          message:
+            '📄 Found userprompt.md in project overrides.\n' +
+            C.dim('   Use it or pick from general templates?'),
+        });
+        if (isCancelSignal(useProject)) {
+          cancel('🚫 Cancelled by user.');
+          return null;
+        }
+        if (!useProject) {
+          // Fall through to general selection below
+        } else {
+          return { hasUserprompt: true, userpromptSource: 'project', userpromptFile: null };
+        }
+      } else {
+        return { hasUserprompt: true, userpromptSource: 'project', userpromptFile: null };
+      }
     }
 
-    const generalContent = await this.discovery.getArchFile(architecture, 'userprompt.md');
+    if (available.length > 0) {
+      const options = available.map((name) => ({ value: name, label: name }));
 
-    if (generalContent !== null) {
-      return { hasUserprompt: true, userpromptSource: 'general' };
+      const choice = await select({
+        message: '🧠 Select an AI persona (userprompt):',
+        options,
+      });
+
+      if (isCancelSignal(choice)) {
+        cancel('🚫 Cancelled by user.');
+        return null;
+      }
+
+      return { hasUserprompt: true, userpromptSource: 'general', userpromptFile: choice };
     }
 
     const proceed = await confirm({
       message:
-        `🧠 Userprompt file not found.\n` +
+        `🧠 No userprompt files found.\n` +
         C.yellow(
           '   It is highly recommended to define the AI persona.\n' +
-            `   Create context/rules/${architecture}/userprompt.md`,
+            `   Add .md files to context/rules/${architecture}/userprompts/`,
         ) +
         `\n   Continue without it?`,
     });
@@ -170,17 +214,116 @@ export class PromptService {
       return null;
     }
 
-    return { hasUserprompt: false, userpromptSource: null };
+    return { hasUserprompt: false, userpromptSource: null, userpromptFile: null };
+  }
+
+  // ---- Step 3c: Architecture file check ----
+
+  /**
+   * Check for architecture.md — project override (single file) → general folder (multiple files).
+   * If neither has content, warn and ask whether to continue.
+   */
+  private async stepArchitectureFile(
+    architecture: Architecture,
+    projectName: string,
+  ): Promise<{
+    hasArchitecture: boolean;
+    architectureSource: 'project' | 'general' | null;
+    architectureFile: string | null;
+  } | null> {
+    const hasProject = await this.discovery.hasProjectOverride(projectName, 'architecture.md');
+    const available = await this.discovery.listArchitectures(architecture);
+
+    if (hasProject) {
+      if (available.length > 0) {
+        const useProject = await confirm({
+          message:
+            '📄 Found architecture.md in project overrides.\n' +
+            C.dim('   Use it or pick from general templates?'),
+        });
+        if (isCancelSignal(useProject)) {
+          cancel('🚫 Cancelled by user.');
+          return null;
+        }
+        if (!useProject) {
+          // Fall through to general selection
+        } else {
+          return { hasArchitecture: true, architectureSource: 'project', architectureFile: null };
+        }
+      } else {
+        return { hasArchitecture: true, architectureSource: 'project', architectureFile: null };
+      }
+    }
+
+    if (available.length > 0) {
+      const options = available.map((name) => ({ value: name, label: name }));
+
+      const choice = await select({
+        message: '🏛️  Select architecture guidelines:',
+        options,
+      });
+
+      if (isCancelSignal(choice)) {
+        cancel('🚫 Cancelled by user.');
+        return null;
+      }
+
+      return { hasArchitecture: true, architectureSource: 'general', architectureFile: choice };
+    }
+
+    // Priority 3: nothing found — warn and offer to skip
+    const proceed = await confirm({
+      message:
+        `🏛️  No architecture files found.\n` +
+        C.yellow(
+          '   It is recommended to define architecture guidelines.\n' +
+            `   Add .md files to context/rules/${architecture}/architectures/`,
+        ) +
+        `\n   Continue without it?`,
+    });
+
+    if (isCancelSignal(proceed) || !proceed) {
+      cancel('🚫 Cancelled by user.');
+      return null;
+    }
+
+    return { hasArchitecture: false, architectureSource: null, architectureFile: null };
   }
 
   // ---- Step 4: Framework selection ----
 
   /**
-   * Framework selection. Frontend/Backend use radio (single choice),
-   * Fullstack uses multiselect (multiple frameworks from the fullstack directory only).
+   * Framework selection. Project override (single framework.md file) takes priority.
+   * Otherwise frontend/backend use radio (single choice),
+   * fullstack uses multiselect (multiple frameworks from the fullstack directory only).
    */
-  private async stepFrameworks(architecture: Architecture): Promise<string[] | null> {
+  private async stepFrameworks(
+    architecture: Architecture,
+    projectName: string,
+  ): Promise<{ frameworks: string[]; hasProjectFramework: boolean } | null> {
+    const hasProject = await this.discovery.hasProjectOverride(projectName, 'framework.md');
     const available = await this.discovery.listFrameworks(architecture);
+
+    if (hasProject) {
+      if (available.length > 0) {
+        const useProject = await confirm({
+          message:
+            '📄 Found framework.md in project overrides.\n' +
+            C.dim('   Use it or pick from general templates?'),
+        });
+        if (isCancelSignal(useProject)) {
+          cancel('🚫 Cancelled by user.');
+          return null;
+        }
+        if (!useProject) {
+          // Fall through to general selection
+        } else {
+          return { frameworks: [], hasProjectFramework: true };
+        }
+      } else {
+        return { frameworks: [], hasProjectFramework: true };
+      }
+    }
 
     if (available.length === 0) {
       const proceed = await confirm({
@@ -195,7 +338,7 @@ export class PromptService {
         return null;
       }
 
-      return [];
+      return { frameworks: [], hasProjectFramework: false };
     }
 
     const options = available.map((name) => ({ value: name, label: name }));
@@ -211,7 +354,7 @@ export class PromptService {
         return null;
       }
 
-      return choices;
+      return { frameworks: choices, hasProjectFramework: false };
     }
 
     const choice = await select({
@@ -224,14 +367,39 @@ export class PromptService {
       return null;
     }
 
-    return [choice];
+    return { frameworks: [choice], hasProjectFramework: false };
   }
 
   // ---- Step 5: Package selection ----
 
-  /** Package/tool multiselect. Nothing selected is valid (returns []). */
-  private async stepPackages(architecture: Architecture): Promise<string[] | null> {
+  /** Package/tool selection. Project override (single file) → general multiselect. */
+  private async stepPackages(
+    architecture: Architecture,
+    projectName: string,
+  ): Promise<{ packages: string[]; hasProjectPackages: boolean } | null> {
+    const hasProject = await this.discovery.hasProjectOverride(projectName, 'package-rules.md');
     const available = await this.discovery.listPackages(architecture);
+
+    if (hasProject) {
+      if (available.length > 0) {
+        const useProject = await confirm({
+          message:
+            '📄 Found package-rules.md in project overrides.\n' +
+            C.dim('   Use it or pick from general templates?'),
+        });
+        if (isCancelSignal(useProject)) {
+          cancel('🚫 Cancelled by user.');
+          return null;
+        }
+        if (!useProject) {
+          // Fall through to general selection
+        } else {
+          return { packages: [], hasProjectPackages: true };
+        }
+      } else {
+        return { packages: [], hasProjectPackages: true };
+      }
+    }
 
     if (available.length === 0) {
       const proceed = await confirm({
@@ -246,7 +414,7 @@ export class PromptService {
         return null;
       }
 
-      return [];
+      return { packages: [], hasProjectPackages: false };
     }
 
     const options = available.map((name) => ({ value: name, label: name }));
@@ -262,32 +430,72 @@ export class PromptService {
       return null;
     }
 
-    return choices;
+    return { packages: choices, hasProjectPackages: false };
   }
 
   // ---- Step 6: Workflow check ----
 
   /**
-   * Check for workflow.md. Project override takes precedence over general.
-   * If neither exists, warn and ask whether to continue.
+   * Check for workflow — project override (single file) → general folder (multiple files).
+   * If neither has content, warn and ask whether to continue.
    */
   private async stepWorkflow(
     architecture: Architecture,
     projectName: string,
-  ): Promise<'project' | 'general' | null> {
+  ): Promise<{
+    hasWorkflow: boolean;
+    workflowSource: 'project' | 'general' | null;
+    workflowFile: string | null;
+  } | null> {
     const hasProject = await this.discovery.hasProjectOverride(projectName, 'workflow.md');
+    const available = await this.discovery.listWorkflows(architecture);
 
-    if (hasProject) return 'project';
+    if (hasProject) {
+      if (available.length > 0) {
+        const useProject = await confirm({
+          message:
+            '📄 Found workflow.md in project overrides.\n' +
+            C.dim('   Use it or pick from general templates?'),
+        });
+        if (isCancelSignal(useProject)) {
+          cancel('🚫 Cancelled by user.');
+          return null;
+        }
+        if (!useProject) {
+          // Fall through to general selection
+        } else {
+          return { hasWorkflow: true, workflowSource: 'project', workflowFile: null };
+        }
+      } else {
+        return { hasWorkflow: true, workflowSource: 'project', workflowFile: null };
+      }
+    }
 
-    const generalContent = await this.discovery.getArchFile(architecture, 'workflow.md');
+    if (available.length > 0) {
+      const options = available.map((name) => ({ value: name, label: name }));
 
-    if (generalContent !== null) return 'general';
+      const choice = await select({
+        message: '⚙️  Select a workflow protocol:',
+        options,
+      });
 
+      if (isCancelSignal(choice)) {
+        cancel('🚫 Cancelled by user.');
+        return null;
+      }
+
+      return { hasWorkflow: true, workflowSource: 'general', workflowFile: choice };
+    }
+
+    // Priority 3: nothing found — warn and offer to skip
     const proceed = await confirm({
       message:
-        `⚙️  Workflow file not found.\n` +
-        C.dim(`   Create context/rules/${architecture}/workflow.md`) +
-        `\n   Continue without workflow rules?`,
+        `⚙️  No workflow files found.\n` +
+        C.yellow(
+          '   It is recommended to define a workflow protocol.\n' +
+            `   Add .md files to context/rules/${architecture}/workflows/`,
+        ) +
+        `\n   Continue without it?`,
     });
 
     if (isCancelSignal(proceed) || !proceed) {
@@ -295,6 +503,6 @@ export class PromptService {
       return null;
     }
 
-    return null;
+    return { hasWorkflow: false, workflowSource: null, workflowFile: null };
   }
 }

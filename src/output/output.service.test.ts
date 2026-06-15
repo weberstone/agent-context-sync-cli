@@ -148,23 +148,23 @@ describe('hasSyncMarkersInFile', () => {
 
 describe('isInGitignore', () => {
   it('returns false when .gitignore does not exist', async () => {
-    const result = await service.isInGitignore('ai-rules-config.json');
+    const result = await service.isInGitignore('ai-context-config.json');
     expect(result).toBe(false);
   });
 
   it('returns true when filename is in .gitignore', async () => {
     await fs.writeFile(
       path.join(tmpDir, '.gitignore'),
-      'node_modules/\nai-rules-config.json\n.env',
+      'node_modules/\nai-context-config.json\n.env',
       'utf-8',
     );
-    const result = await service.isInGitignore('ai-rules-config.json');
+    const result = await service.isInGitignore('ai-context-config.json');
     expect(result).toBe(true);
   });
 
   it('returns false when filename is not in .gitignore', async () => {
     await fs.writeFile(path.join(tmpDir, '.gitignore'), 'node_modules/\n.env', 'utf-8');
-    const result = await service.isInGitignore('ai-rules-config.json');
+    const result = await service.isInGitignore('ai-context-config.json');
     expect(result).toBe(false);
   });
 });

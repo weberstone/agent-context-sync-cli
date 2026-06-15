@@ -31,14 +31,14 @@ export class CompilerService {
       await this.compileWorkflow(answers, projectName),
       await this.compileSpec(projectName),
       await this.compileArchitecture(answers, projectName),
-      ...(await this.compileFrameworks(answers)),
-      await this.compilePackageRules(answers),
+      ...(await this.compileFrameworks(answers, projectName)),
+      await this.compilePackageRules(answers, projectName),
     ];
 
     return results.filter((f): f is CompiledFile => f !== null);
   }
 
-  /** Userprompt: project override → general template → skip. */
+  /** Userprompt: project override → general userprompts folder → skip. */
   private async compileUserprompt(
     answers: Answers,
     projectName: string,
@@ -48,7 +48,9 @@ export class CompilerService {
     const content =
       answers.userpromptSource === 'project'
         ? await this.discovery.getProjectOverride(projectName, 'userprompt.md')
-        : await this.discovery.getArchFile(answers.architecture, 'userprompt.md');
+        : answers.userpromptFile
+          ? await this.discovery.getUserpromptContent(answers.architecture, answers.userpromptFile)
+          : null;
 
     if (content === null) return null;
 
@@ -64,29 +66,36 @@ export class CompilerService {
     return { filename: 'spec.md', content };
   }
 
-  /**
-   * Architecture: project override → general template.
-   * Uses `??` for short-circuit. If the user explicitly chose 'general'
-   * in a conflict dialog, skip the project override.
-   */
+  /** Architecture: project override → general architectures folder → skip. */
   private async compileArchitecture(
     answers: Answers,
     projectName: string,
   ): Promise<CompiledFile | null> {
-    const preferGeneral = answers.architectureSource === 'general';
-    const projectContent = preferGeneral
-      ? null
-      : await this.discovery.getProjectOverride(projectName, 'architecture.md');
+    if (!answers.hasArchitecture) return null;
+
     const content =
-      projectContent ?? (await this.discovery.getArchFile(answers.architecture, 'architecture.md'));
+      answers.architectureSource === 'project'
+        ? await this.discovery.getProjectOverride(projectName, 'architecture.md')
+        : answers.architectureFile
+          ? await this.discovery.getArchitectureContent(
+              answers.architecture,
+              answers.architectureFile,
+            )
+          : null;
 
     if (content === null) return null;
 
     return { filename: 'architecture.md', content };
   }
 
-  /** Frameworks: one file per selected framework. Filename = original template name. */
-  private async compileFrameworks(answers: Answers): Promise<CompiledFile[]> {
+  /** Frameworks: project override → general frameworks folder. */
+  private async compileFrameworks(answers: Answers, projectName: string): Promise<CompiledFile[]> {
+    if (answers.hasProjectFramework) {
+      const content = await this.discovery.getProjectOverride(projectName, 'framework.md');
+      if (content === null) return [];
+      return [{ filename: 'framework.md', content }];
+    }
+
     const results: CompiledFile[] = [];
     for (const name of answers.frameworks) {
       const content = await this.discovery.getTemplateContent(
@@ -101,12 +110,17 @@ export class CompilerService {
     return results;
   }
 
-  /**
-   * Package rules: concatenation of selected package files.
-   * Header `# Code Style & Tools`, content separated by `\n\n`.
-   * If nothing selected → `null` (file not created).
-   */
-  private async compilePackageRules(answers: Answers): Promise<CompiledFile | null> {
+  /** Package rules: project override → general concatenation. */
+  private async compilePackageRules(
+    answers: Answers,
+    projectName: string,
+  ): Promise<CompiledFile | null> {
+    if (answers.hasProjectPackages) {
+      const content = await this.discovery.getProjectOverride(projectName, 'package-rules.md');
+      if (content === null) return null;
+      return { filename: 'package-rules.md', content };
+    }
+
     if (answers.packages.length === 0) return null;
 
     const parts: string[] = [];
@@ -127,16 +141,18 @@ export class CompilerService {
     return { filename: 'package-rules.md', content };
   }
 
-  /** Workflow: project override → general template → skip. */
+  /** Workflow: project override → general workflows folder → skip. */
   private async compileWorkflow(
     answers: Answers,
     projectName: string,
   ): Promise<CompiledFile | null> {
+    if (!answers.hasWorkflow) return null;
+
     const content =
       answers.workflowSource === 'project'
         ? await this.discovery.getProjectOverride(projectName, 'workflow.md')
-        : answers.workflowSource === 'general'
-          ? await this.discovery.getArchFile(answers.architecture, 'workflow.md')
+        : answers.workflowFile
+          ? await this.discovery.getWorkflowContent(answers.architecture, answers.workflowFile)
           : null;
 
     if (content === null) return null;
