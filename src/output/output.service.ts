@@ -117,7 +117,7 @@ export class OutputService {
     } catch (err) {
       if (!isEnoent(err)) {
         logWarning(
-          `Cannot read .gitignore: ${(err as Error).message}. Suggest adding ai-rules-config.json manually.`,
+          `Cannot read .gitignore: ${(err as Error).message}. Suggest adding ai-context-config.json manually.`,
         );
       }
       return false;

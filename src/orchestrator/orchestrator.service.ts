@@ -22,7 +22,7 @@ import {
   multiselect,
 } from '../rules/prompts/clack-adapter.js';
 import { ConfigService } from '../rules/config/config.service.js';
-import type { Config } from '../rules/config/config.types.js';
+import type { Architecture, Config } from '../rules/config/config.types.js';
 import { DiscoveryService } from '../rules/discovery/discovery.service.js';
 import { PromptService } from '../rules/prompts/prompts.service.js';
 import type { Answers } from '../rules/prompts/prompts.types.js';
@@ -343,147 +343,161 @@ export class OrchestratorService {
     const arch = rulesAnswers.architecture;
     const projectName = this.projectName;
 
-    // userprompt conflict: project override file vs general userprompts/ folder
-    const hasProjectUserprompt = await this.discovery.hasProjectOverride(
+    await this.resolveFolderConflict({
+      rulesAnswers,
       projectName,
-      'userprompt.md',
-    );
-    const generalUserprompts = await this.discovery.listUserprompts(arch);
-    const hasGeneralUserprompts = generalUserprompts.length > 0;
+      arch,
+      fileName: 'userprompt.md',
+      folderName: 'userprompts',
+      listFn: (a) => this.discovery.listUserprompts(a),
+      selectMessage: 'Select a userprompt from the general folder:',
+      applyProject: () => {
+        rulesAnswers.userpromptSource = 'project';
+        rulesAnswers.userpromptFile = null;
+        rulesAnswers.hasUserprompt = true;
+      },
+      applyGeneral: (file) => {
+        rulesAnswers.userpromptSource = 'general';
+        rulesAnswers.userpromptFile = file;
+        rulesAnswers.hasUserprompt = true;
+      },
+    });
 
-    if (hasProjectUserprompt && hasGeneralUserprompts) {
-      const choice = await select({
-        message:
-          'userprompt exists in both project (userprompt.md) and general (userprompts/). Which one to use?',
-        options: [
-          { value: 'project', label: 'Project version (userprompt.md)' },
-          { value: 'general', label: 'General (choose from userprompts/)' },
-        ],
-      });
-      if (!isCancel(choice)) {
-        if (choice === 'project') {
-          rulesAnswers.userpromptSource = 'project';
-          rulesAnswers.userpromptFile = null;
-          rulesAnswers.hasUserprompt = true;
-        } else {
-          const fileOptions = generalUserprompts.map((name) => ({ value: name, label: name }));
-          const fileChoice = await select({
-            message: 'Select a userprompt from the general folder:',
-            options: fileOptions,
-          });
-          if (!isCancel(fileChoice)) {
-            rulesAnswers.userpromptSource = 'general';
-            rulesAnswers.userpromptFile = fileChoice;
-            rulesAnswers.hasUserprompt = true;
-          }
-        }
+    await this.resolveFolderConflict({
+      rulesAnswers,
+      projectName,
+      arch,
+      fileName: 'architecture.md',
+      folderName: 'architectures',
+      listFn: (a) => this.discovery.listArchitectures(a),
+      selectMessage: 'Select architecture guidelines from the general folder:',
+      applyProject: () => {
+        rulesAnswers.architectureSource = 'project';
+        rulesAnswers.architectureFile = null;
+        rulesAnswers.hasArchitecture = true;
+      },
+      applyGeneral: (file) => {
+        rulesAnswers.architectureSource = 'general';
+        rulesAnswers.architectureFile = file;
+        rulesAnswers.hasArchitecture = true;
+      },
+    });
+
+    await this.resolveFolderConflict({
+      rulesAnswers,
+      projectName,
+      arch,
+      fileName: 'workflow.md',
+      folderName: 'workflows',
+      listFn: (a) => this.discovery.listWorkflows(a),
+      selectMessage: 'Select a workflow from the general folder:',
+      applyProject: () => {
+        rulesAnswers.workflowSource = 'project';
+        rulesAnswers.workflowFile = null;
+        rulesAnswers.hasWorkflow = true;
+      },
+      applyGeneral: (file) => {
+        rulesAnswers.workflowSource = 'general';
+        rulesAnswers.workflowFile = file;
+        rulesAnswers.hasWorkflow = true;
+      },
+    });
+
+    // framework and package-rules use a simpler boolean-toggle conflict
+    await this.resolveSimpleConflict({
+      projectName,
+      arch,
+      fileName: 'framework.md',
+      folderName: 'frameworks',
+      listFn: (a) => this.discovery.listFrameworks(a),
+      onResult: (useProject) => {
+        rulesAnswers.hasProjectFramework = useProject;
+      },
+    });
+
+    await this.resolveSimpleConflict({
+      projectName,
+      arch,
+      fileName: 'package-rules.md',
+      folderName: 'packages',
+      listFn: (a) => this.discovery.listPackages(a),
+      onResult: (useProject) => {
+        rulesAnswers.hasProjectPackages = useProject;
+      },
+    });
+  }
+
+  private async resolveFolderConflict(params: {
+    rulesAnswers: Answers;
+    projectName: string;
+    arch: Architecture;
+    fileName: string;
+    folderName: string;
+    listFn: (arch: Architecture) => Promise<string[]>;
+    selectMessage: string;
+    applyProject: () => void;
+    applyGeneral: (file: string) => void;
+  }): Promise<void> {
+    const {
+      projectName,
+      arch,
+      fileName,
+      folderName,
+      listFn,
+      selectMessage,
+      applyProject,
+      applyGeneral,
+    } = params;
+    const hasProject = await this.discovery.hasProjectOverride(projectName, fileName);
+    const items = await listFn(arch);
+
+    if (!hasProject || items.length === 0) return;
+
+    const choice = await select({
+      message: `${fileName} exists in both project (${fileName}) and general (${folderName}/). Which one to use?`,
+      options: [
+        { value: 'project', label: `Project version (${fileName})` },
+        { value: 'general', label: `General (choose from ${folderName}/)` },
+      ],
+    });
+
+    if (isCancel(choice)) return;
+
+    if (choice === 'project') {
+      applyProject();
+    } else {
+      const fileOptions = items.map((name) => ({ value: name, label: name }));
+      const fileChoice = await select({ message: selectMessage, options: fileOptions });
+      if (!isCancel(fileChoice)) {
+        applyGeneral(fileChoice);
       }
     }
+  }
 
-    // architecture conflict: project override file vs general architectures/ folder
-    const hasProjectArch = await this.discovery.hasProjectOverride(projectName, 'architecture.md');
-    const generalArchitectures = await this.discovery.listArchitectures(arch);
-    const hasGeneralArchitectures = generalArchitectures.length > 0;
+  private async resolveSimpleConflict(params: {
+    projectName: string;
+    arch: Architecture;
+    fileName: string;
+    folderName: string;
+    listFn: (arch: Architecture) => Promise<string[]>;
+    onResult: (useProject: boolean) => void;
+  }): Promise<void> {
+    const { projectName, arch, fileName, folderName, listFn, onResult } = params;
+    const hasProject = await this.discovery.hasProjectOverride(projectName, fileName);
+    const items = await listFn(arch);
 
-    if (hasProjectArch && hasGeneralArchitectures) {
-      const choice = await select({
-        message:
-          'architecture.md exists in both project (architecture.md) and general (architectures/). Which one to use?',
-        options: [
-          { value: 'project', label: 'Project version (architecture.md)' },
-          { value: 'general', label: 'General (choose from architectures/)' },
-        ],
-      });
-      if (!isCancel(choice)) {
-        if (choice === 'project') {
-          rulesAnswers.architectureSource = 'project';
-          rulesAnswers.architectureFile = null;
-          rulesAnswers.hasArchitecture = true;
-        } else {
-          const fileOptions = generalArchitectures.map((name) => ({ value: name, label: name }));
-          const fileChoice = await select({
-            message: 'Select architecture guidelines from the general folder:',
-            options: fileOptions,
-          });
-          if (!isCancel(fileChoice)) {
-            rulesAnswers.architectureSource = 'general';
-            rulesAnswers.architectureFile = fileChoice;
-            rulesAnswers.hasArchitecture = true;
-          }
-        }
-      }
-    }
+    if (!hasProject || items.length === 0) return;
 
-    // workflow conflict: project override file vs general workflows/ folder
-    const hasProjectWf = await this.discovery.hasProjectOverride(projectName, 'workflow.md');
-    const generalWorkflows = await this.discovery.listWorkflows(arch);
-    const hasGeneralWorkflows = generalWorkflows.length > 0;
+    const choice = await select({
+      message: `${fileName} exists in both project (${fileName}) and general (${folderName}/). Which one to use?`,
+      options: [
+        { value: 'project', label: `Project version (${fileName})` },
+        { value: 'general', label: `General (choose from ${folderName}/)` },
+      ],
+    });
 
-    if (hasProjectWf && hasGeneralWorkflows) {
-      const choice = await select({
-        message:
-          'workflow.md exists in both project (workflow.md) and general (workflows/). Which one to use?',
-        options: [
-          { value: 'project', label: 'Project version (workflow.md)' },
-          { value: 'general', label: 'General (choose from workflows/)' },
-        ],
-      });
-      if (!isCancel(choice)) {
-        if (choice === 'project') {
-          rulesAnswers.workflowSource = 'project';
-          rulesAnswers.workflowFile = null;
-          rulesAnswers.hasWorkflow = true;
-        } else {
-          const fileOptions = generalWorkflows.map((name) => ({ value: name, label: name }));
-          const fileChoice = await select({
-            message: 'Select a workflow from the general folder:',
-            options: fileOptions,
-          });
-          if (!isCancel(fileChoice)) {
-            rulesAnswers.workflowSource = 'general';
-            rulesAnswers.workflowFile = fileChoice;
-            rulesAnswers.hasWorkflow = true;
-          }
-        }
-      }
-    }
-
-    // framework conflict: project override file vs general frameworks/ folder
-    const hasProjectFw = await this.discovery.hasProjectOverride(projectName, 'framework.md');
-    const generalFrameworks = await this.discovery.listFrameworks(arch);
-    const hasGeneralFrameworks = generalFrameworks.length > 0;
-
-    if (hasProjectFw && hasGeneralFrameworks) {
-      const choice = await select({
-        message:
-          'framework.md exists in both project (framework.md) and general (frameworks/). Which one to use?',
-        options: [
-          { value: 'project', label: 'Project version (framework.md)' },
-          { value: 'general', label: 'General (choose from frameworks/)' },
-        ],
-      });
-      if (!isCancel(choice)) {
-        rulesAnswers.hasProjectFramework = choice === 'project';
-      }
-    }
-
-    // package-rules conflict: project override file vs general packages/ folder
-    const hasProjectPkg = await this.discovery.hasProjectOverride(projectName, 'package-rules.md');
-    const generalPackages = await this.discovery.listPackages(arch);
-    const hasGeneralPackages = generalPackages.length > 0;
-
-    if (hasProjectPkg && hasGeneralPackages) {
-      const choice = await select({
-        message:
-          'package-rules.md exists in both project (package-rules.md) and general (packages/). Which one to use?',
-        options: [
-          { value: 'project', label: 'Project version (package-rules.md)' },
-          { value: 'general', label: 'General (choose from packages/)' },
-        ],
-      });
-      if (!isCancel(choice)) {
-        rulesAnswers.hasProjectPackages = choice === 'project';
-      }
+    if (!isCancel(choice)) {
+      onResult(choice === 'project');
     }
   }
 
@@ -587,13 +601,13 @@ export class OrchestratorService {
 
   private async showGitignoreWarning(): Promise<void> {
     const pc = this.colors;
-    const inGitignore = await this.output.isInGitignore('ai-rules-config.json');
+    const inGitignore = await this.output.isInGitignore('ai-context-config.json');
     if (!inGitignore) {
       const lines: string[] = [
         this.hr(pc.boldYellow),
         this.padLine('  ⚠️  IMPORTANT', pc.boldYellow),
         '',
-        this.padLine('  Add "ai-rules-config.json"', pc.yellow),
+        this.padLine('  Add "ai-context-config.json"', pc.yellow),
         this.padLine('  to your .gitignore file', pc.yellow),
         this.padLine('  to keep it private.', pc.yellow),
       ];

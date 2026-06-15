@@ -89,16 +89,6 @@ export class DiscoveryService {
   }
 
   /**
-   * Read a file directly under an architecture directory.
-   * Path: `context/rules/<arch>/<filename>`
-   * Used for `userprompt.md`, `architecture.md`, `workflow.md`.
-   */
-  async getArchFile(arch: Architecture, filename: string): Promise<string | null> {
-    const filePath = path.join(this.rulesDir, arch, filename);
-    return this.readIfNonEmpty(filePath);
-  }
-
-  /**
    * List `.md` files in `context/rules/<arch>/userprompts/`, sans extension.
    * Returns [] if the directory doesn't exist or is empty.
    */

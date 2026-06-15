@@ -1,5 +1,5 @@
 ---
-name: ai-rules-manager
+name: ai-context-manager
 description: Manage, synchronize, and update the AI agent rules and skills using the centralized CLI tool.
 license: MIT
 ---
@@ -11,7 +11,7 @@ You are the AI Context Manager. Your job is to help the user maintain up-to-date
 
 ## 🔍 Context Awareness
 Before taking action, always check the project root for:
-1. `ai-rules-config.json` (The source of truth for current configuration).
+1. `ai-context-config.json` (The source of truth for current configuration).
 2. `.agents/rules/` and `.agents/skills/` directories (Compiled output).
 3. Project-specific overrides in `context/projects/<project-name>/`.
 

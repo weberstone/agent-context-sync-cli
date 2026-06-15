@@ -1,5 +1,5 @@
 /**
- * Reads, writes, and validates `ai-rules-config.json`.
+ * Reads, writes, and validates `ai-context-config.json`.
  *
  * The config file persists the user's questionnaire answers so that
  * subsequent runs can skip the interactive prompts and regenerate rules
@@ -16,7 +16,7 @@ import { readTextFile, writeTextFile } from '../../utils/fs.js';
 import { logWarning } from '../../utils/log.js';
 import type { Config, Architecture } from './config.types.js';
 
-const CONFIG_FILENAME = 'ai-rules-config.json';
+const CONFIG_FILENAME = 'ai-context-config.json';
 
 const VALID_ARCHITECTURES: ReadonlySet<string> = new Set<Architecture>([
   'frontend',

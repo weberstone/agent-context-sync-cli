@@ -37,7 +37,6 @@ function makeDiscovery(overrides: Record<string, unknown> = {}) {
     hasProjectOverride: vi.fn().mockResolvedValue(false),
     getProjectOverride: vi.fn().mockResolvedValue(null),
     getTemplateContent: vi.fn().mockResolvedValue(null),
-    getArchFile: vi.fn().mockResolvedValue(null),
     listUserprompts: vi.fn().mockResolvedValue([]),
     getUserpromptContent: vi.fn().mockResolvedValue(null),
     listArchitectures: vi.fn().mockResolvedValue([]),

@@ -102,7 +102,7 @@ your-project/
 │   └── rules/                        
 ├── .continue/                        # Continue.dev plugin integration
 │   └── rules/                        
-└── ai-rules-config.json              # CLI configuration file (for updates)
+└── ai-context-config.json              # CLI configuration file (for updates)
 ```
 
 ---
@@ -166,7 +166,7 @@ The CLI won't blindly overwrite it. An interactive prompt will appear offering t
 Claude Code, Cursor IDE, Continue.dev, Gemini CLI, and a universal `AGENTS.md` for other LLMs.
 
 **How do I update the project context if the server rules change?**
-Just run the sync command again. The script uses the local `ai-rules-config.json` and will automatically download the latest versions of the previously selected files without re-prompting.
+Just run the sync command again. The script uses the local `ai-context-config.json` and will automatically download the latest versions of the previously selected files without re-prompting.
 
 **Does the tool support working with monorepos (Monorepo, Nx, Turborepo)?**
 Yes. You can run the CLI isolated in the root of each individual package, application, or microservice.
@@ -175,4 +175,4 @@ Yes. You can run the CLI isolated in the root of each individual package, applic
 No. By separating global rules and atomic skills, you only inject the instructions that are actually required. This prevents prompt bloating and saves tokens.
 
 **Can I automate the utility's execution in CI/CD or Git Hooks?**
-Yes. The utility works in non-interactive mode if the `ai-rules-config.json` file is present. Add the command to `post-merge` or `pre-commit` hooks.
+Yes. The utility works in non-interactive mode if the `ai-context-config.json` file is present. Add the command to `post-merge` or `pre-commit` hooks.

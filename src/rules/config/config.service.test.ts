@@ -48,7 +48,7 @@ describe('read', () => {
 
   it('returns Config for a valid config file', async () => {
     await fs.writeFile(
-      path.join(tmpDir, 'ai-rules-config.json'),
+      path.join(tmpDir, 'ai-context-config.json'),
       JSON.stringify(validConfig, null, 2),
       'utf-8',
     );
@@ -58,7 +58,7 @@ describe('read', () => {
 
   it('returns null for corrupted JSON', async () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await fs.writeFile(path.join(tmpDir, 'ai-rules-config.json'), '{ broken json', 'utf-8');
+    await fs.writeFile(path.join(tmpDir, 'ai-context-config.json'), '{ broken json', 'utf-8');
     const result = await service.read();
     expect(result).toBe(null);
     expect(spy).toHaveBeenCalled();
@@ -68,7 +68,7 @@ describe('read', () => {
   it('returns null when JSON is valid but missing required fields', async () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await fs.writeFile(
-      path.join(tmpDir, 'ai-rules-config.json'),
+      path.join(tmpDir, 'ai-context-config.json'),
       JSON.stringify({ version: 1 }),
       'utf-8',
     );
@@ -81,7 +81,7 @@ describe('read', () => {
   it('returns null when architecture has invalid value', async () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await fs.writeFile(
-      path.join(tmpDir, 'ai-rules-config.json'),
+      path.join(tmpDir, 'ai-context-config.json'),
       JSON.stringify({ ...validConfig, architecture: 'mobile' }),
       'utf-8',
     );
@@ -93,7 +93,7 @@ describe('read', () => {
   it('returns null when version is not a number', async () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await fs.writeFile(
-      path.join(tmpDir, 'ai-rules-config.json'),
+      path.join(tmpDir, 'ai-context-config.json'),
       JSON.stringify({ ...validConfig, version: '1' }),
       'utf-8',
     );
@@ -104,7 +104,7 @@ describe('read', () => {
 
   it('tolerates extra unknown fields', async () => {
     await fs.writeFile(
-      path.join(tmpDir, 'ai-rules-config.json'),
+      path.join(tmpDir, 'ai-context-config.json'),
       JSON.stringify({ ...validConfig, unknownField: 'should be ignored' }, null, 2),
       'utf-8',
     );
@@ -121,9 +121,9 @@ describe('read', () => {
 });
 
 describe('write', () => {
-  it('writes formatted JSON to ai-rules-config.json', async () => {
+  it('writes formatted JSON to ai-context-config.json', async () => {
     await service.write(validConfig);
-    const raw = await fs.readFile(path.join(tmpDir, 'ai-rules-config.json'), 'utf-8');
+    const raw = await fs.readFile(path.join(tmpDir, 'ai-context-config.json'), 'utf-8');
     const parsed = JSON.parse(raw);
     expect(parsed).toEqual(validConfig);
     expect(raw).toContain('\n');
@@ -150,7 +150,7 @@ describe('backward compatibility', () => {
       lastSync: '2025-01-01T00:00:00Z',
     };
     await fs.writeFile(
-      path.join(tmpDir, 'ai-rules-config.json'),
+      path.join(tmpDir, 'ai-context-config.json'),
       JSON.stringify(oldConfig, null, 2),
       'utf-8',
     );

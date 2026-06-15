@@ -1,5 +1,5 @@
 /**
- * Config type definitions for `ai-rules-config.json`.
+ * Config type definitions for `ai-context-config.json`.
  *
  * Separated from the service to prevent circular imports: other modules
  * import only the type, not the entire service with its dependencies.
@@ -10,7 +10,7 @@ export type Architecture = 'frontend' | 'backend' | 'fullstack';
 
 /**
  * Shape of the persisted configuration file.
- * Stored as `ai-rules-config.json` in the target project root.
+ * Stored as `ai-context-config.json` in the target project root.
  *
  * `frameworks` is always an array: single-element for frontend/backend,
  * multi-element for fullstack (which allows selecting multiple frameworks).
