@@ -13,6 +13,8 @@ function mockDiscovery(overrides: Record<string, unknown> = {}) {
     getArchFile: vi.fn().mockResolvedValue(null),
     listUserprompts: vi.fn().mockResolvedValue([]),
     getUserpromptContent: vi.fn().mockResolvedValue(null),
+    listArchitectures: vi.fn().mockResolvedValue([]),
+    getArchitectureContent: vi.fn().mockResolvedValue(null),
     isFileNonEmpty: vi.fn().mockResolvedValue(false),
     ...overrides,
   };
@@ -24,6 +26,9 @@ function answers(overrides: Partial<Answers> = {}): Answers {
     hasUserprompt: true,
     userpromptSource: 'general',
     userpromptFile: 'frontend-expert',
+    hasArchitecture: true,
+    architectureSource: 'general',
+    architectureFile: 'base-architecture',
     frameworks: ['angular-guidelines'],
     packages: ['tailwind'],
     workflowSource: 'general',
@@ -39,11 +44,9 @@ beforeEach(() => {
 describe('compile', () => {
   it('produces files in priority order', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi
-        .fn()
-        .mockResolvedValueOnce('# Project Spec') // spec
-        .mockResolvedValueOnce('# Project Arch'), // architecture
+      getProjectOverride: vi.fn().mockResolvedValueOnce('# Project Spec'), // spec
       getUserpromptContent: vi.fn().mockResolvedValueOnce('# Userprompt'), // userprompt general
+      getArchitectureContent: vi.fn().mockResolvedValueOnce('# Architecture'), // architecture general
       getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'), // workflow general
       getTemplateContent: vi
         .fn()
@@ -65,11 +68,9 @@ describe('compile', () => {
 
   it('skips spec when project override is null', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi
-        .fn()
-        .mockResolvedValueOnce(null) // spec: not found
-        .mockResolvedValueOnce('# Arch'), // architecture
+      getProjectOverride: vi.fn().mockResolvedValueOnce(null), // spec: not found
       getUserpromptContent: vi.fn().mockResolvedValueOnce('# Userprompt'),
+      getArchitectureContent: vi.fn().mockResolvedValueOnce('# Architecture'),
       getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'),
       getTemplateContent: vi
         .fn()
@@ -84,7 +85,8 @@ describe('compile', () => {
 
   it('skips userprompt when hasUserprompt is false', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi.fn().mockResolvedValueOnce('# Spec').mockResolvedValueOnce('# Arch'),
+      getProjectOverride: vi.fn().mockResolvedValueOnce('# Spec'), // spec
+      getArchitectureContent: vi.fn().mockResolvedValueOnce('# Architecture'), // architecture general
       getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'), // only workflow
       getTemplateContent: vi
         .fn()
@@ -105,8 +107,8 @@ describe('compile', () => {
       getProjectOverride: vi
         .fn()
         .mockResolvedValueOnce('# Project Userprompt') // 1st: userprompt (project)
-        .mockResolvedValueOnce('# Spec') // 2nd: spec
-        .mockResolvedValueOnce('# Arch'), // 3rd: architecture
+        .mockResolvedValueOnce('# Spec'), // 2nd: spec
+      getArchitectureContent: vi.fn().mockResolvedValueOnce('# Architecture'), // architecture general
       getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'), // 1st: workflow (general)
       getTemplateContent: vi
         .fn()
@@ -125,9 +127,9 @@ describe('compile', () => {
       getProjectOverride: vi
         .fn()
         .mockResolvedValueOnce('# Project Workflow') // 1st: workflow (project)
-        .mockResolvedValueOnce('# Spec') // 2nd: spec
-        .mockResolvedValueOnce('# Arch'), // 3rd: architecture
+        .mockResolvedValueOnce('# Spec'), // 2nd: spec
       getUserpromptContent: vi.fn().mockResolvedValueOnce('# Userprompt'), // userprompt (general)
+      getArchitectureContent: vi.fn().mockResolvedValueOnce('# Architecture'), // architecture general
       getTemplateContent: vi
         .fn()
         .mockResolvedValueOnce('# Framework')
@@ -142,8 +144,9 @@ describe('compile', () => {
 
   it('handles multiple frameworks for fullstack', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi.fn().mockResolvedValueOnce('# Spec').mockResolvedValueOnce('# Arch'),
+      getProjectOverride: vi.fn().mockResolvedValueOnce('# Spec'), // spec only, architecture uses getArchitectureContent
       getUserpromptContent: vi.fn().mockResolvedValueOnce('# Userprompt'),
+      getArchitectureContent: vi.fn().mockResolvedValueOnce('# Architecture'),
       getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'),
       getTemplateContent: vi
         .fn()
@@ -169,8 +172,9 @@ describe('compile', () => {
 
   it('skips package-rules when nothing selected', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi.fn().mockResolvedValueOnce('# Spec').mockResolvedValueOnce('# Arch'),
+      getProjectOverride: vi.fn().mockResolvedValueOnce('# Spec'), // spec only
       getUserpromptContent: vi.fn().mockResolvedValueOnce('# Userprompt'),
+      getArchitectureContent: vi.fn().mockResolvedValueOnce('# Architecture'),
       getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'),
       getTemplateContent: vi.fn().mockResolvedValueOnce('# Framework'),
     });
@@ -182,8 +186,9 @@ describe('compile', () => {
 
   it('compiles package-rules with header and concatenation', async () => {
     const discovery = mockDiscovery({
-      getProjectOverride: vi.fn().mockResolvedValueOnce('# Spec').mockResolvedValueOnce('# Arch'),
+      getProjectOverride: vi.fn().mockResolvedValueOnce('# Spec'), // spec only
       getUserpromptContent: vi.fn().mockResolvedValueOnce('# Userprompt'),
+      getArchitectureContent: vi.fn().mockResolvedValueOnce('# Architecture'),
       getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'),
       getTemplateContent: vi
         .fn()

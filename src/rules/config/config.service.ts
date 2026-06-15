@@ -34,6 +34,9 @@ const REQUIRED_FIELDS: ReadonlyArray<keyof Config> = [
   'hasUserprompt',
   'userpromptFile',
   'userpromptSource',
+  'hasArchitecture',
+  'architectureFile',
+  'architectureSource',
   'syncSkills',
   'skills',
   'lastSync',
@@ -156,6 +159,22 @@ export class ConfigService {
       throw new Error('"userpromptSource" must be "project", "general", or null');
     }
 
+    if (typeof obj.hasArchitecture !== 'boolean') {
+      throw new Error('"hasArchitecture" must be a boolean');
+    }
+
+    if (obj.architectureFile !== null && typeof obj.architectureFile !== 'string') {
+      throw new Error('"architectureFile" must be a string or null');
+    }
+
+    if (
+      obj.architectureSource !== null &&
+      obj.architectureSource !== 'project' &&
+      obj.architectureSource !== 'general'
+    ) {
+      throw new Error('"architectureSource" must be "project", "general", or null');
+    }
+
     if (typeof obj.syncSkills !== 'boolean') {
       throw new Error('"syncSkills" must be a boolean');
     }
@@ -183,6 +202,9 @@ export class ConfigService {
     if (!('skills' in result)) result.skills = [];
     if (!('userpromptFile' in result)) result.userpromptFile = null;
     if (!('userpromptSource' in result)) result.userpromptSource = null;
+    if (!('hasArchitecture' in result)) result.hasArchitecture = false;
+    if (!('architectureFile' in result)) result.architectureFile = null;
+    if (!('architectureSource' in result)) result.architectureSource = null;
     return result;
   }
 }

@@ -30,6 +30,9 @@ export interface Config {
   hasUserprompt: boolean;
   userpromptFile: string | null;
   userpromptSource: 'project' | 'general' | null;
+  hasArchitecture: boolean;
+  architectureFile: string | null;
+  architectureSource: 'project' | 'general' | null;
   syncSkills: boolean;
   skills: string[];
   lastSync: string;

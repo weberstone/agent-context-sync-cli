@@ -53,6 +53,10 @@ export class PromptService {
     if (userpromptResult === null) return null;
     const { hasUserprompt, userpromptSource, userpromptFile } = userpromptResult;
 
+    const architectureResult = await this.stepArchitectureFile(architecture, projectName);
+    if (architectureResult === null) return null;
+    const { hasArchitecture, architectureSource, architectureFile } = architectureResult;
+
     const frameworks = await this.stepFrameworks(architecture);
     if (frameworks === null) return null;
 
@@ -69,6 +73,9 @@ export class PromptService {
       hasUserprompt,
       userpromptSource,
       userpromptFile,
+      hasArchitecture,
+      architectureSource,
+      architectureFile,
       frameworks,
       packages,
       workflowSource,
@@ -188,6 +195,65 @@ export class PromptService {
     }
 
     return { hasUserprompt: false, userpromptSource: null, userpromptFile: null };
+  }
+
+  // ---- Step 3c: Architecture file check ----
+
+  /**
+   * Check for architecture.md — project override (single file) → general folder (multiple files).
+   * If neither has content, warn and ask whether to continue.
+   */
+  private async stepArchitectureFile(
+    architecture: Architecture,
+    projectName: string,
+  ): Promise<{
+    hasArchitecture: boolean;
+    architectureSource: 'project' | 'general' | null;
+    architectureFile: string | null;
+  } | null> {
+    // Priority 1: project override — single architecture.md file
+    const hasProject = await this.discovery.hasProjectOverride(projectName, 'architecture.md');
+
+    if (hasProject) {
+      return { hasArchitecture: true, architectureSource: 'project', architectureFile: null };
+    }
+
+    // Priority 2: scan context/rules/<arch>/architectures/ folder
+    const available = await this.discovery.listArchitectures(architecture);
+
+    if (available.length > 0) {
+      const options = available.map((name) => ({ value: name, label: name }));
+
+      const choice = await select({
+        message: '🏛️  Select architecture guidelines:',
+        options,
+      });
+
+      if (isCancelSignal(choice)) {
+        cancel('🚫 Cancelled by user.');
+        return null;
+      }
+
+      return { hasArchitecture: true, architectureSource: 'general', architectureFile: choice };
+    }
+
+    // Priority 3: nothing found — warn and offer to skip
+    const proceed = await confirm({
+      message:
+        `🏛️  No architecture files found.\n` +
+        C.yellow(
+          '   It is recommended to define architecture guidelines.\n' +
+            `   Add .md files to context/rules/${architecture}/architectures/`,
+        ) +
+        `\n   Continue without it?`,
+    });
+
+    if (isCancelSignal(proceed) || !proceed) {
+      cancel('🚫 Cancelled by user.');
+      return null;
+    }
+
+    return { hasArchitecture: false, architectureSource: null, architectureFile: null };
   }
 
   // ---- Step 4: Framework selection ----

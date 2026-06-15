@@ -18,6 +18,9 @@ const validConfig: Config = {
   hasUserprompt: true,
   userpromptFile: 'frontend-expert',
   userpromptSource: 'general',
+  hasArchitecture: true,
+  architectureFile: 'base-architecture',
+  architectureSource: 'general',
   syncSkills: true,
   skills: ['angular-developer'],
   lastSync: '2026-06-14T12:00:00Z',
@@ -152,6 +155,9 @@ describe('backward compatibility', () => {
     expect(result!.skills).toEqual([]);
     expect(result!.userpromptFile).toBe(null);
     expect(result!.userpromptSource).toBe(null);
+    expect(result!.hasArchitecture).toBe(false);
+    expect(result!.architectureFile).toBe(null);
+    expect(result!.architectureSource).toBe(null);
   });
 });
 

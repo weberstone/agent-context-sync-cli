@@ -40,6 +40,8 @@ function makeDiscovery(overrides: Record<string, unknown> = {}) {
     getArchFile: vi.fn().mockResolvedValue(null),
     listUserprompts: vi.fn().mockResolvedValue([]),
     getUserpromptContent: vi.fn().mockResolvedValue(null),
+    listArchitectures: vi.fn().mockResolvedValue([]),
+    getArchitectureContent: vi.fn().mockResolvedValue(null),
     isFileNonEmpty: vi.fn().mockResolvedValue(false),
     ...overrides,
   };
@@ -64,8 +66,10 @@ describe('run', () => {
         .fn()
         .mockResolvedValueOnce(true) // spec
         .mockResolvedValueOnce(false) // userprompt project
+        .mockResolvedValueOnce(false) // architecture project
         .mockResolvedValueOnce(false), // workflow project
       listUserprompts: vi.fn().mockResolvedValue(['frontend-expert', 'react-specialist']),
+      listArchitectures: vi.fn().mockResolvedValue(['base-architecture']),
       getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'), // workflow general
       listFrameworks: vi.fn().mockResolvedValue(['angular-guidelines', 'only-node']),
       listPackages: vi.fn().mockResolvedValue(['tailwind', 'typescript']),
@@ -73,8 +77,9 @@ describe('run', () => {
     });
 
     (mockClack.select as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce('frontend') // architecture
+      .mockResolvedValueOnce('frontend') // architecture type
       .mockResolvedValueOnce('frontend-expert') // userprompt
+      .mockResolvedValueOnce('base-architecture') // architecture file
       .mockResolvedValueOnce('angular-guidelines'); // framework
     (mockClack.multiselect as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce(['tailwind', 'typescript']) // packages
@@ -88,6 +93,9 @@ describe('run', () => {
     expect(answers!.hasUserprompt).toBe(true);
     expect(answers!.userpromptSource).toBe('general');
     expect(answers!.userpromptFile).toBe('frontend-expert');
+    expect(answers!.hasArchitecture).toBe(true);
+    expect(answers!.architectureSource).toBe('general');
+    expect(answers!.architectureFile).toBe('base-architecture');
     expect(answers!.frameworks).toEqual(['angular-guidelines']);
     expect(answers!.packages).toEqual(['tailwind', 'typescript']);
     expect(answers!.workflowSource).toBe('general');
@@ -128,8 +136,10 @@ describe('run', () => {
         .fn()
         .mockResolvedValueOnce(true) // spec
         .mockResolvedValueOnce(false) // userprompt project
+        .mockResolvedValueOnce(false) // architecture project
         .mockResolvedValueOnce(false), // workflow project
       listUserprompts: vi.fn().mockResolvedValue(['fullstack-dev']),
+      listArchitectures: vi.fn().mockResolvedValue(['base-architecture']),
       getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'), // workflow general
       getAvailableArchitectures: vi.fn().mockResolvedValue(['frontend', 'backend', 'fullstack']),
       listFrameworks: vi.fn().mockResolvedValue(['angular-guidelines', 'only-node']),
@@ -137,8 +147,9 @@ describe('run', () => {
     });
 
     (mockClack.select as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce('fullstack') // architecture
-      .mockResolvedValueOnce('fullstack-dev'); // userprompt
+      .mockResolvedValueOnce('fullstack') // architecture type
+      .mockResolvedValueOnce('fullstack-dev') // userprompt
+      .mockResolvedValueOnce('base-architecture'); // architecture file
     (mockClack.multiselect as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce(['angular-guidelines', 'only-node']) // frameworks
       .mockResolvedValueOnce(['tailwind']) // packages
@@ -157,8 +168,10 @@ describe('run', () => {
         .fn()
         .mockResolvedValueOnce(true) // spec
         .mockResolvedValueOnce(false) // userprompt project
+        .mockResolvedValueOnce(false) // architecture project
         .mockResolvedValueOnce(false), // workflow project
       listUserprompts: vi.fn().mockResolvedValue([]), // userprompt folder: empty
+      listArchitectures: vi.fn().mockResolvedValue([]), // architectures folder: empty
       getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'), // workflow general
       listFrameworks: vi.fn().mockResolvedValue(['only-node']),
       listPackages: vi.fn().mockResolvedValue([]), // empty — goes to confirm branch
@@ -166,6 +179,7 @@ describe('run', () => {
 
     (mockClack.confirm as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce(true) // userprompt: continue
+      .mockResolvedValueOnce(true) // architecture: continue
       .mockResolvedValueOnce(true); // packages empty: continue
     (mockClack.select as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce('backend')
@@ -179,6 +193,9 @@ describe('run', () => {
     expect(answers!.hasUserprompt).toBe(false);
     expect(answers!.userpromptSource).toBe(null);
     expect(answers!.userpromptFile).toBe(null);
+    expect(answers!.hasArchitecture).toBe(false);
+    expect(answers!.architectureSource).toBe(null);
+    expect(answers!.architectureFile).toBe(null);
   });
 
   it('returns empty arrays when directories are empty and user continues', async () => {
@@ -186,9 +203,11 @@ describe('run', () => {
       hasProjectOverride: vi
         .fn()
         .mockResolvedValueOnce(true) // spec
-        .mockResolvedValueOnce(false)
-        .mockResolvedValueOnce(false),
+        .mockResolvedValueOnce(false) // userprompt project
+        .mockResolvedValueOnce(false) // architecture project
+        .mockResolvedValueOnce(false), // workflow project
       listUserprompts: vi.fn().mockResolvedValue(['frontend-expert']),
+      listArchitectures: vi.fn().mockResolvedValue(['base-architecture']),
       getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'),
       listFrameworks: vi.fn().mockResolvedValue([]),
       listPackages: vi.fn().mockResolvedValue([]),
@@ -198,8 +217,9 @@ describe('run', () => {
       .mockResolvedValueOnce(true) // empty frameworks: continue
       .mockResolvedValueOnce(true); // empty packages: continue
     (mockClack.select as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce('frontend') // architecture
-      .mockResolvedValueOnce('frontend-expert'); // userprompt
+      .mockResolvedValueOnce('frontend') // architecture type
+      .mockResolvedValueOnce('frontend-expert') // userprompt
+      .mockResolvedValueOnce('base-architecture'); // architecture file
     (mockClack.multiselect as ReturnType<typeof vi.fn>).mockResolvedValueOnce(['claude-code']);
 
     const service = new PromptService(discovery as any);
@@ -228,10 +248,12 @@ describe('run', () => {
     const discovery = makeDiscovery({
       hasProjectOverride: vi
         .fn()
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(false)
-        .mockResolvedValueOnce(false),
+        .mockResolvedValueOnce(true) // spec
+        .mockResolvedValueOnce(false) // userprompt project
+        .mockResolvedValueOnce(false) // architecture project
+        .mockResolvedValueOnce(false), // workflow project
       listUserprompts: vi.fn().mockResolvedValue(['backend-expert']),
+      listArchitectures: vi.fn().mockResolvedValue(['base-architecture']),
       getArchFile: vi.fn().mockResolvedValueOnce('# Workflow'),
       listFrameworks: vi.fn().mockResolvedValue(['only-node']),
       listPackages: vi.fn().mockResolvedValue(['typescript']),
@@ -240,6 +262,7 @@ describe('run', () => {
     (mockClack.select as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce('backend')
       .mockResolvedValueOnce('backend-expert')
+      .mockResolvedValueOnce('base-architecture')
       .mockResolvedValueOnce('only-node');
     (mockClack.multiselect as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce(['typescript']) // packages
@@ -257,6 +280,7 @@ describe('run', () => {
         .fn()
         .mockResolvedValueOnce(true) // spec: project
         .mockResolvedValueOnce(true) // userprompt: project
+        .mockResolvedValueOnce(true) // architecture: project
         .mockResolvedValueOnce(true), // workflow: project
       listFrameworks: vi.fn().mockResolvedValue(['angular-guidelines']),
       listPackages: vi.fn().mockResolvedValue(['tailwind']),
@@ -274,6 +298,8 @@ describe('run', () => {
 
     expect(answers!.userpromptSource).toBe('project');
     expect(answers!.userpromptFile).toBe(null); // project override doesn't set filename
+    expect(answers!.architectureSource).toBe('project');
+    expect(answers!.architectureFile).toBe(null);
     expect(answers!.workflowSource).toBe('project');
   });
 });

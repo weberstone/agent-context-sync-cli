@@ -242,6 +242,10 @@ export class OrchestratorService {
       config.projectName,
       'workflow.md',
     );
+    const hasProjectArchitecture = await this.discovery.hasProjectOverride(
+      config.projectName,
+      'architecture.md',
+    );
     const hasGeneralWorkflow = await this.discovery.isFileNonEmpty(
       `${this.rulesDir}/${arch}/workflow.md`,
     );
@@ -258,11 +262,21 @@ export class OrchestratorService {
       workflowSource = 'general';
     }
 
+    let architectureSource: 'project' | 'general' | null = null;
+    if (config.hasArchitecture) {
+      architectureSource = hasProjectArchitecture
+        ? 'project'
+        : (config.architectureSource ?? 'general');
+    }
+
     return {
       architecture: arch,
       hasUserprompt: config.hasUserprompt,
       userpromptSource,
       userpromptFile: config.userpromptFile ?? null,
+      hasArchitecture: config.hasArchitecture,
+      architectureSource,
+      architectureFile: config.architectureFile ?? null,
       frameworks: config.frameworks,
       packages: config.packages,
       workflowSource,
@@ -366,20 +380,37 @@ export class OrchestratorService {
       }
     }
 
-    // architecture conflict
+    // architecture conflict: project override file vs general architectures/ folder
     const hasProjectArch = await this.discovery.hasProjectOverride(projectName, 'architecture.md');
-    const hasGeneralArch = (await this.discovery.getArchFile(arch, 'architecture.md')) !== null;
+    const generalArchitectures = await this.discovery.listArchitectures(arch);
+    const hasGeneralArchitectures = generalArchitectures.length > 0;
 
-    if (hasProjectArch && hasGeneralArch) {
+    if (hasProjectArch && hasGeneralArchitectures) {
       const choice = await select({
-        message: 'architecture.md exists in both project and general. Which one to use?',
+        message:
+          'architecture.md exists in both project (architecture.md) and general (architectures/). Which one to use?',
         options: [
-          { value: 'project', label: 'Project version' },
-          { value: 'general', label: 'General version' },
+          { value: 'project', label: 'Project version (architecture.md)' },
+          { value: 'general', label: 'General (choose from architectures/)' },
         ],
       });
       if (!isCancel(choice)) {
-        rulesAnswers.architectureSource = choice as 'project' | 'general';
+        if (choice === 'project') {
+          rulesAnswers.architectureSource = 'project';
+          rulesAnswers.architectureFile = null;
+          rulesAnswers.hasArchitecture = true;
+        } else {
+          const fileOptions = generalArchitectures.map((name) => ({ value: name, label: name }));
+          const fileChoice = await select({
+            message: 'Select architecture guidelines from the general folder:',
+            options: fileOptions,
+          });
+          if (!isCancel(fileChoice)) {
+            rulesAnswers.architectureSource = 'general';
+            rulesAnswers.architectureFile = fileChoice;
+            rulesAnswers.hasArchitecture = true;
+          }
+        }
       }
     }
 
@@ -563,6 +594,9 @@ function buildConfig(answers: Record<string, unknown>, projectName: string): Con
     hasUserprompt: (answers.hasUserprompt as boolean) ?? false,
     userpromptFile: (answers.userpromptFile as string) ?? null,
     userpromptSource: (answers.userpromptSource as 'project' | 'general' | null) ?? null,
+    hasArchitecture: (answers.hasArchitecture as boolean) ?? false,
+    architectureFile: (answers.architectureFile as string) ?? null,
+    architectureSource: (answers.architectureSource as 'project' | 'general' | null) ?? null,
     syncSkills: (answers.syncSkills as boolean) ?? false,
     skills: (answers.skills as string[]) ?? [],
     lastSync: new Date().toISOString(),
