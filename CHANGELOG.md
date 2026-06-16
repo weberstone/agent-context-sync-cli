@@ -12,6 +12,8 @@
   instead of reading all at startup.
 - Core Directives reworded to reference the Rule Manifest table by name
   and emphasize opening every referenced file.
+- Removed dead `nameConflict` flag from `ParsedSkill` type and simplified
+  `SkillsDiscoveryService.addSkill()`.
 
 
 
