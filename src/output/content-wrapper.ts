@@ -113,3 +113,19 @@ function extractFrontmatter(text: string): string {
 export function wrapSkills(content: string): string {
   return `${SKILLS_START}\n${content}${SKILLS_END}\n`;
 }
+
+/** Check whether a file already contains SKILLS markers. */
+export function hasSkillsMarkers(fileContent: string): boolean {
+  return fileContent.includes(SKILLS_START) && fileContent.includes(SKILLS_END);
+}
+
+/**
+ * Update the skills section in an existing file.
+ * Mirrors `updateRules()` for the SKILLS section.
+ */
+export function updateSkills(existing: string, newContent: string): string {
+  if (hasSkillsMarkers(existing)) {
+    return replaceBetween(existing, SKILLS_START, SKILLS_END, newContent);
+  }
+  return `${existing.trimEnd()}\n\n${wrapSkills(newContent)}`;
+}

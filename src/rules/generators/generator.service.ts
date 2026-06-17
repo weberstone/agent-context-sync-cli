@@ -94,7 +94,7 @@ function buildSkillsTable(ctx: GeneratorContext): string | null {
   const header = '| Skill | Path | Description |\n' + '| :--- | :--- | :--- |';
 
   const body = ctx.skills
-    .map((s) => `| ${s.name} | \`@.agents/skills/${s.path.split('/').pop()}\` | ${s.description} |`)
+    .map((s) => `| ${s.name} | \`@${s.path}\` | ${s.description} |`)
     .join('\n');
 
   return wrapSkills(`## 🛠️ Skills\n\n` + SKILLS_INSTRUCTIONS + `${header}\n${body}`);

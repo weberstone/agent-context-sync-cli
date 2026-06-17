@@ -5,6 +5,9 @@
 ### Changed
 - Agent manifest directives: enforce reading + loading rules at initialization,
   follow them for every task (all 7 generators)
+- Skills path: fix folder-skill reference (`SKILL.md` → full path)
+- Skills section: write as sibling of RULES (not nested), update on re-runs
+- content-wrapper: add `updateSkills()` / `hasSkillsMarkers()` for dual-section sync
 
 
 ## [0.3.2] — 2026-06-17
