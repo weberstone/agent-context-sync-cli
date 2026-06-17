@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.4.0] — 2026-06-17
+## [0.3.3] — 2026-06-17
 
 ### Changed
 - Agent manifest directives: enforce reading + loading rules at initialization,
