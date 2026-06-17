@@ -74,7 +74,7 @@ function buildSkillsTable(ctx: GeneratorContext): string | null {
 // ---- Shared string constants ----
 
 const D_READ =
-  'At initialization, open and read every file referenced in the Rule Manifest below and load into context. Do not skip any — each file contains instructions that override default behavior.';
+  '[ULTRA CRITICAL] At initialization, you MUST read EVERY .md file referenced below without exception; execution of ANY task is STRICTLY FORBIDDEN until you have fully adopted the assigned role and committed to unconditionally following these overriding rules in every action.';
 const D_FOLLOW =
   'When executing tasks, follow the rules defined in these files. If a local rule conflicts with general knowledge, the local rule takes precedence.';
 const RULES_LOCATION = `All rules are located in \`${RULES_DIR}/\`. Load them in priority order:\n\n`;
