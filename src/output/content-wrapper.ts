@@ -24,8 +24,8 @@
 const START_MARKER = '<!-- AGENT-CONTEXT-SYNC-CLI:RULES:START -->';
 const END_MARKER = '<!-- AGENT-CONTEXT-SYNC-CLI:RULES:END -->';
 
-const SKILLS_START = '<!-- AGENT-CONTEXT-SYNC-CLI:SKILLS:START -->';
-const SKILLS_END = '<!-- AGENT-CONTEXT-SYNC-CLI:SKILLS:END -->';
+export const SKILLS_START = '<!-- AGENT-CONTEXT-SYNC-CLI:SKILLS:START -->';
+export const SKILLS_END = '<!-- AGENT-CONTEXT-SYNC-CLI:SKILLS:END -->';
 
 /** Wrap content in RULES markers (for new files or full overwrites). */
 export function wrapRules(content: string): string {

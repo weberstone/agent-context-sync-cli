@@ -21,12 +21,11 @@ import {
   hasSyncMarkers,
   wrapSkills,
   updateSkills,
+  SKILLS_START,
+  SKILLS_END,
 } from './content-wrapper.js';
 
 const RULES_DIR = '.agents/rules';
-
-const SKILLS_START = '<!-- AGENT-CONTEXT-SYNC-CLI:SKILLS:START -->';
-const SKILLS_END = '<!-- AGENT-CONTEXT-SYNC-CLI:SKILLS:END -->';
 
 /**
  * Split generator output into rules and skills portions.

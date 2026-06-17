@@ -29,6 +29,7 @@ import type { Answers } from '../rules/prompts/prompts.types.js';
 import { AVAILABLE_AGENTS } from '../rules/prompts/prompts.types.js';
 import { CompilerService } from '../rules/compiler/compiler.service.js';
 import type { CompiledFile } from '../rules/compiler/compiler.types.js';
+import { F, RULE_FILE_SET } from '../rules/compiler/compiler.types.js';
 import { generatorRegistry } from '../rules/generators/generator.service.js';
 import type { GeneratorContext } from '../rules/generators/generator.types.js';
 import { OutputService } from '../output/output.service.js';
@@ -45,15 +46,6 @@ import fs from 'node:fs/promises';
 const boldMagenta = (s: string) => pc.bold(pc.magenta(s));
 const boldGreen = (s: string) => pc.bold(pc.green(s));
 const boldCyan = (s: string) => pc.bold(pc.cyan(s));
-
-const KNOWN_RULE_FILES = new Set([
-  'userprompt.md',
-  'workflow.md',
-  'spec.md',
-  'architecture.md',
-  'framework.md',
-  'package-rules.md',
-]);
 
 export class OrchestratorService {
   constructor(
@@ -84,8 +76,9 @@ export class OrchestratorService {
     // Handled during generation — no pre-check needed, resolveWriteMode handles it
 
     // 3. Rules branch
+    const usingExistingConfig = !!configAnswers.architecture;
     let ruleFiles: CompiledFile[] = [];
-    const syncRules = await this.askSyncRules();
+    const syncRules = usingExistingConfig ? true : await this.askSyncRules();
     if (syncRules) {
       let rulesAnswers: Answers | null;
       if (configAnswers.architecture) {
@@ -111,17 +104,25 @@ export class OrchestratorService {
 
     // 4. Skills branch
     let copiedSkills: ParsedSkill[] = [];
-    const syncSkills = await this.askSyncSkills();
+    const syncSkills = usingExistingConfig
+      ? !!configAnswers.syncSkills
+      : await this.askSyncSkills();
     if (syncSkills) {
-      const skillsAnswers = await this.skillsPrompt.run(this.projectName);
-      if (skillsAnswers === null) return;
+      let selectedSkillNames: string[];
+      if (usingExistingConfig && Array.isArray(configAnswers.skills)) {
+        selectedSkillNames = configAnswers.skills as string[];
+      } else {
+        const skillsAnswers = await this.skillsPrompt.run(this.projectName);
+        if (skillsAnswers === null) return;
+        selectedSkillNames = skillsAnswers.selectedSkills;
+      }
 
-      if (skillsAnswers.selectedSkills.length > 0) {
+      if (selectedSkillNames.length > 0) {
         const allSkills = [
           ...(await this.skillsDiscovery.listProjectSkills(this.projectName)),
           ...(await this.skillsDiscovery.listGeneralSkills()),
         ];
-        const selected = allSkills.filter((s) => skillsAnswers.selectedSkills.includes(s.name));
+        const selected = allSkills.filter((s) => selectedSkillNames.includes(s.name));
         const s = spinner();
         s.start('Copying skills...');
         const names = await this.skillsCompiler.compile(selected);
@@ -130,12 +131,16 @@ export class OrchestratorService {
       }
 
       configAnswers.syncSkills = true;
-      configAnswers.skills = skillsAnswers.selectedSkills;
+      configAnswers.skills = selectedSkillNames;
     }
 
     // 5. Agent selection (always, at the end)
     let agents: string[];
-    if (!process.stdin.isTTY && Array.isArray(configAnswers.agents)) {
+    const useConfigAgents =
+      (!process.stdin.isTTY || usingExistingConfig) &&
+      Array.isArray(configAnswers.agents) &&
+      (configAnswers.agents as string[]).length > 0;
+    if (useConfigAgents) {
       agents = configAnswers.agents as string[];
     } else {
       const result = await this.stepAgentSelection();
@@ -244,15 +249,15 @@ export class OrchestratorService {
 
     const hasProjectUserprompt = await this.discovery.hasProjectOverride(
       config.projectName,
-      'userprompt.md',
+      F.USERPROMPT,
     );
     const hasProjectWorkflow = await this.discovery.hasProjectOverride(
       config.projectName,
-      'workflow.md',
+      F.WORKFLOW,
     );
     const hasProjectArchitecture = await this.discovery.hasProjectOverride(
       config.projectName,
-      'architecture.md',
+      F.ARCHITECTURE,
     );
 
     let userpromptSource: 'project' | 'general' | null = null;
@@ -354,7 +359,7 @@ export class OrchestratorService {
       rulesAnswers,
       projectName,
       arch,
-      fileName: 'userprompt.md',
+      fileName: F.USERPROMPT,
       folderName: 'userprompts',
       listFn: (a) => this.discovery.listUserprompts(a),
       selectMessage: 'Select a userprompt from the general folder:',
@@ -374,7 +379,7 @@ export class OrchestratorService {
       rulesAnswers,
       projectName,
       arch,
-      fileName: 'architecture.md',
+      fileName: F.ARCHITECTURE,
       folderName: 'architectures',
       listFn: (a) => this.discovery.listArchitectures(a),
       selectMessage: 'Select architecture guidelines from the general folder:',
@@ -394,7 +399,7 @@ export class OrchestratorService {
       rulesAnswers,
       projectName,
       arch,
-      fileName: 'workflow.md',
+      fileName: F.WORKFLOW,
       folderName: 'workflows',
       listFn: (a) => this.discovery.listWorkflows(a),
       selectMessage: 'Select a workflow from the general folder:',
@@ -414,7 +419,7 @@ export class OrchestratorService {
     await this.resolveSimpleConflict({
       projectName,
       arch,
-      fileName: 'framework.md',
+      fileName: F.FRAMEWORK,
       folderName: 'frameworks',
       listFn: (a) => this.discovery.listFrameworks(a),
       onResult: (useProject) => {
@@ -425,7 +430,7 @@ export class OrchestratorService {
     await this.resolveSimpleConflict({
       projectName,
       arch,
-      fileName: 'package-rules.md',
+      fileName: F.PACKAGE_RULES,
       folderName: 'packages',
       listFn: (a) => this.discovery.listPackages(a),
       onResult: (useProject) => {
@@ -637,14 +642,12 @@ function buildGeneratorContext(ruleFiles: CompiledFile[], skills: ParsedSkill[])
   const filenames = new Set(ruleFiles.map((f) => f.filename));
 
   return {
-    hasUserprompt: filenames.has('userprompt.md'),
-    hasWorkflow: filenames.has('workflow.md'),
-    hasSpec: filenames.has('spec.md'),
-    hasArchitecture: filenames.has('architecture.md'),
-    frameworkFiles: ruleFiles
-      .filter((f) => !KNOWN_RULE_FILES.has(f.filename))
-      .map((f) => f.filename),
-    hasPackageRules: filenames.has('package-rules.md'),
+    hasUserprompt: filenames.has(F.USERPROMPT),
+    hasWorkflow: filenames.has(F.WORKFLOW),
+    hasSpec: filenames.has(F.SPEC),
+    hasArchitecture: filenames.has(F.ARCHITECTURE),
+    frameworkFiles: ruleFiles.filter((f) => !RULE_FILE_SET.has(f.filename)).map((f) => f.filename),
+    hasPackageRules: filenames.has(F.PACKAGE_RULES),
     skills: skills.map((s) => ({
       name: s.name,
       path: `.agents/skills/${s.name}${s.type === 'folder' ? '/SKILL.md' : '.md'}`,

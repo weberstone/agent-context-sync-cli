@@ -12,6 +12,7 @@
 import type { DiscoveryService } from '../discovery/discovery.service.js';
 import type { Answers } from '../prompts/prompts.types.js';
 import type { CompiledFile } from './compiler.types.js';
+import { F } from './compiler.types.js';
 
 const PACKAGE_RULES_HEADER = '# Code Style & Tools';
 
@@ -47,23 +48,23 @@ export class CompilerService {
 
     const content =
       answers.userpromptSource === 'project'
-        ? await this.discovery.getProjectOverride(projectName, 'userprompt.md')
+        ? await this.discovery.getProjectOverride(projectName, F.USERPROMPT)
         : answers.userpromptFile
           ? await this.discovery.getUserpromptContent(answers.architecture, answers.userpromptFile)
           : null;
 
     if (content === null) return null;
 
-    return { filename: 'userprompt.md', content };
+    return { filename: F.USERPROMPT, content };
   }
 
   /** Spec: only from per-project override. No general spec exists. */
   private async compileSpec(projectName: string): Promise<CompiledFile | null> {
-    const content = await this.discovery.getProjectOverride(projectName, 'spec.md');
+    const content = await this.discovery.getProjectOverride(projectName, F.SPEC);
 
     if (content === null) return null;
 
-    return { filename: 'spec.md', content };
+    return { filename: F.SPEC, content };
   }
 
   /** Architecture: project override → general architectures folder → skip. */
@@ -75,7 +76,7 @@ export class CompilerService {
 
     const content =
       answers.architectureSource === 'project'
-        ? await this.discovery.getProjectOverride(projectName, 'architecture.md')
+        ? await this.discovery.getProjectOverride(projectName, F.ARCHITECTURE)
         : answers.architectureFile
           ? await this.discovery.getArchitectureContent(
               answers.architecture,
@@ -85,15 +86,15 @@ export class CompilerService {
 
     if (content === null) return null;
 
-    return { filename: 'architecture.md', content };
+    return { filename: F.ARCHITECTURE, content };
   }
 
   /** Frameworks: project override → general frameworks folder. */
   private async compileFrameworks(answers: Answers, projectName: string): Promise<CompiledFile[]> {
     if (answers.hasProjectFramework) {
-      const content = await this.discovery.getProjectOverride(projectName, 'framework.md');
+      const content = await this.discovery.getProjectOverride(projectName, F.FRAMEWORK);
       if (content === null) return [];
-      return [{ filename: 'framework.md', content }];
+      return [{ filename: F.FRAMEWORK, content }];
     }
 
     const results: CompiledFile[] = [];
@@ -116,9 +117,9 @@ export class CompilerService {
     projectName: string,
   ): Promise<CompiledFile | null> {
     if (answers.hasProjectPackages) {
-      const content = await this.discovery.getProjectOverride(projectName, 'package-rules.md');
+      const content = await this.discovery.getProjectOverride(projectName, F.PACKAGE_RULES);
       if (content === null) return null;
-      return { filename: 'package-rules.md', content };
+      return { filename: F.PACKAGE_RULES, content };
     }
 
     if (answers.packages.length === 0) return null;
@@ -138,7 +139,7 @@ export class CompilerService {
     if (parts.length === 0) return null;
 
     const content = [PACKAGE_RULES_HEADER, ...parts].join('\n\n') + '\n';
-    return { filename: 'package-rules.md', content };
+    return { filename: F.PACKAGE_RULES, content };
   }
 
   /** Workflow: project override → general workflows folder → skip. */
@@ -150,13 +151,13 @@ export class CompilerService {
 
     const content =
       answers.workflowSource === 'project'
-        ? await this.discovery.getProjectOverride(projectName, 'workflow.md')
+        ? await this.discovery.getProjectOverride(projectName, F.WORKFLOW)
         : answers.workflowFile
           ? await this.discovery.getWorkflowContent(answers.architecture, answers.workflowFile)
           : null;
 
     if (content === null) return null;
 
-    return { filename: 'workflow.md', content };
+    return { filename: F.WORKFLOW, content };
   }
 }

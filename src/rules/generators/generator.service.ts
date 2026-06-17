@@ -15,8 +15,19 @@
 
 import { wrapSkills } from '../../output/content-wrapper.js';
 import type { AgentFile, AgentGenerator, GeneratorContext } from './generator.types.js';
+import { AGENT_META } from './generator.types.js';
+import { F } from '../compiler/compiler.types.js';
 
-// ---- Priority Row Builder (shared across all generators) ----
+// ---- Shared descriptions ----
+
+const DESC_USERPROMPT = 'Agent role, persona, and behavioral guidelines';
+const DESC_WORKFLOW = 'Task execution workflow and interaction protocols';
+const DESC_SPEC = 'Project context, conventions, and domain knowledge';
+const DESC_ARCHITECTURE = 'Architectural constraints and design principles';
+const DESC_FRAMEWORK = 'Framework and library conventions and best practices';
+const DESC_PACKAGE_RULES = 'Tool and package configuration rules';
+
+// ---- Priority Row Builder ----
 
 interface PriorityRow {
   priority: string;
@@ -24,62 +35,19 @@ interface PriorityRow {
   description: string;
 }
 
-/**
- * Build an ordered list of priority rows from the generator context.
- * Rows are only included for files that actually exist (as determined
- * by the CompilerService output). Priorities are FIXED — missing files
- * simply skip their row, numbers don't renumber.
- */
 function buildRows(ctx: GeneratorContext): PriorityRow[] {
   const rows: PriorityRow[] = [];
 
-  if (ctx.hasUserprompt) {
-    rows.push({
-      priority: '1',
-      file: 'userprompt.md',
-      description: 'Agent role, persona, and behavioral guidelines',
-    });
-  }
-
-  if (ctx.hasWorkflow) {
-    rows.push({
-      priority: '2',
-      file: 'workflow.md',
-      description: 'Task execution workflow and interaction protocols',
-    });
-  }
-
-  if (ctx.hasSpec) {
-    rows.push({
-      priority: '3',
-      file: 'spec.md',
-      description: 'Project context, conventions, and domain knowledge',
-    });
-  }
-
-  if (ctx.hasArchitecture) {
-    rows.push({
-      priority: '4',
-      file: 'architecture.md',
-      description: 'Architectural constraints and design principles',
-    });
-  }
+  if (ctx.hasUserprompt) rows.push({ priority: '1', file: F.USERPROMPT, description: DESC_USERPROMPT });
+  if (ctx.hasWorkflow) rows.push({ priority: '2', file: F.WORKFLOW, description: DESC_WORKFLOW });
+  if (ctx.hasSpec) rows.push({ priority: '3', file: F.SPEC, description: DESC_SPEC });
+  if (ctx.hasArchitecture) rows.push({ priority: '4', file: F.ARCHITECTURE, description: DESC_ARCHITECTURE });
 
   for (const fw of ctx.frameworkFiles) {
-    rows.push({
-      priority: '5',
-      file: fw,
-      description: 'Framework and library conventions and best practices',
-    });
+    rows.push({ priority: '5', file: fw, description: DESC_FRAMEWORK });
   }
 
-  if (ctx.hasPackageRules) {
-    rows.push({
-      priority: '6',
-      file: 'package-rules.md',
-      description: 'Tool and package configuration rules',
-    });
-  }
+  if (ctx.hasPackageRules) rows.push({ priority: '6', file: F.PACKAGE_RULES, description: DESC_PACKAGE_RULES });
 
   return rows;
 }
@@ -102,11 +70,13 @@ function buildSkillsTable(ctx: GeneratorContext): string | null {
 
 // ---- Shared string constants ----
 
-const DIRECTIVE =
-  'At initialization, read every file below and load into context. Follow these rules for every task.\n';
-const RULES_LOCATION =
-  'All rules are located in `.agents/rules/`. Load them in priority order:\n\n';
-const H1_PROJECT = '# Project AI Rules\n\n';
+const R = '.agents/rules';
+
+const D_READ =
+  'At initialization, open and read every file referenced in the Rule Manifest below and load into context. Do not skip any — each file contains instructions that override default behavior.';
+const D_FOLLOW =
+  'When executing tasks, follow the rules defined in these files. If a local rule conflicts with general knowledge, the local rule takes precedence.';
+const RULES_LOCATION = `All rules are located in \`${R}/\`. Load them in priority order:\n\n`;
 const TABLE_HEADER = '| Priority | File | Description |\n| :--- | :--- | :--- |';
 const TABLE_HEADER_CLAUDE = '| Priority | File Path | Description |\n| :--- | :--- | :--- |';
 const SKILLS_INSTRUCTIONS =
@@ -114,180 +84,116 @@ const SKILLS_INSTRUCTIONS =
 const FOOTER =
   '\n---\n*This file is managed by `agent-context-sync-cli`. Do not modify manually.*\n';
 
-/** Format a priority row as a numbered line (used by Cursor, Windsurf, Continue). */
-function numberedLine(r: PriorityRow): string {
-  return `${r.priority}. \`.agents/rules/${r.file}\` — ${r.description}`;
+/** Shared frontmatter description for Cursor, Windsurf, and Continue. */
+const FRONTMATTER_DESC =
+  'Project AI agent rules and conventions — always loaded into every session';
+
+// ---- Formatting helpers ----
+
+type RuleFormat = 'table' | 'table-claude' | 'numbered' | 'imports';
+
+const TABLE_ROW: Record<RuleFormat, (r: PriorityRow) => string> = {
+  table: (r) => `| ${r.priority} | \`${R}/${r.file}\` | ${r.description} |`,
+  'table-claude': (r) => `| ${r.priority} | \`@${R}/${r.file}\` | ${r.description} |`,
+  numbered: (r) => `${r.priority}. \`${R}/${r.file}\` — ${r.description}`,
+  imports: (r) => `@${R}/${r.file} — ${r.description}`,
+};
+
+function formatRules(rows: PriorityRow[], fmt: RuleFormat): string {
+  if (fmt === 'table' || fmt === 'table-claude') {
+    const header = fmt === 'table-claude' ? TABLE_HEADER_CLAUDE : TABLE_HEADER;
+    return header + '\n' + rows.map(TABLE_ROW[fmt]).join('\n');
+  }
+  return rows.map(TABLE_ROW[fmt]).join('\n');
+}
+
+// ---- Content assembler ----
+
+interface ContentOpts {
+  frontmatter?: string;
+  heading: string;
+  ruleFormat: RuleFormat;
+}
+
+function assemble(ctx: GeneratorContext, opts: ContentOpts): string {
+  const rows = buildRows(ctx);
+  const skills = buildSkillsTable(ctx);
+
+  let content = opts.frontmatter ?? '';
+  content += opts.heading;
+  content += `## Core Directives\n${D_READ}\n${D_FOLLOW}\n`;
+  content += `\n## Rules\n\n${RULES_LOCATION}`;
+  content += formatRules(rows, opts.ruleFormat);
+  if (skills) content += `\n${skills}\n`;
+  content += FOOTER;
+  return content;
 }
 
 // ---- Generator functions ----
 
-// ---- Claude Code: CLAUDE.md ----
-// Format: Plain Markdown with inline priority table.
-// Source: docs/agents/claude-code.md
+// Each generator is a thin wrapper around assemble(). The parameters encode
+// what's different between agents; all shared text lives in the constants above.
+
+const H = '# Project AI Rules\n\n';
 
 function generateClaudeMd(ctx: GeneratorContext): AgentFile[] {
-  const rows = buildRows(ctx);
-
-  const body = rows
-    .map((r) => `| ${r.priority} | \`@.agents/rules/${r.file}\` | ${r.description} |`)
-    .join('\n');
-
-  const table = `${TABLE_HEADER_CLAUDE}\n${body}`;
-
-  const content =
-    `# CLAUDE.md\n\n` +
-    `## 🧠 Core Directives\n` +
-    `1. **Read All Rules**: At initialization, open and read every file referenced in the Rule Manifest below and load into context. Do not skip any — each file contains instructions that override default behavior.\n` +
-    `2. **Follow Rules**: When executing tasks, follow the rules defined in these files. If a local rule conflicts with general knowledge, the local rule takes precedence.\n\n` +
-    `## 🔗 Rule Manifest\n\n` +
-    `${table}\n` +
-    (buildSkillsTable(ctx) ? `\n${buildSkillsTable(ctx)}\n` : '') +
-    FOOTER;
-
-  return [{ filename: 'CLAUDE.md', content }];
+  return [{ filename: 'CLAUDE.md', content: assemble(ctx, { heading: '# CLAUDE.md\n\n', ruleFormat: 'table-claude' }) }];
 }
-
-// ---- Cursor: .cursor/rules/00-agent-rules.mdc ----
-// Format: YAML frontmatter + Markdown. alwaysApply: true.
-// Source: docs/agents/cursor.md
 
 function generateCursorRules(ctx: GeneratorContext): AgentFile[] {
-  const rows = buildRows(ctx);
-  const lines = rows.map(numberedLine);
-
-  const content =
-    `---\n` +
-    `description: "Project AI agent rules and conventions — always loaded into every session"\n` +
-    `alwaysApply: true\n` +
-    `---\n\n` +
-    H1_PROJECT +
-    DIRECTIVE +
-    RULES_LOCATION +
-    `${lines.join('\n')}\n` +
-    (buildSkillsTable(ctx) ? `\n${buildSkillsTable(ctx)}\n` : '') +
-    FOOTER;
-
-  return [{ filename: '.cursor/rules/00-agent-rules.mdc', content }];
+  return [{ filename: '.cursor/rules/00-agent-rules.mdc', content: assemble(ctx, {
+    frontmatter: `---\ndescription: "${FRONTMATTER_DESC}"\nalwaysApply: true\n---\n\n`,
+    heading: H,
+    ruleFormat: 'numbered',
+  }) }];
 }
-
-// ---- Gemini CLI: GEMINI.md ----
-// Format: Plain Markdown with @import directives.
-// Source: docs/agents/gemini-cli.md
 
 function generateGeminiMd(ctx: GeneratorContext): AgentFile[] {
-  const rows = buildRows(ctx);
-
-  const imports = rows.map((r) => `@.agents/rules/${r.file} — ${r.description}`).join('\n');
-
-  const content =
-    `# GEMINI.md\n\n` +
-    DIRECTIVE +
-    RULES_LOCATION +
-    `${imports}\n` +
-    (buildSkillsTable(ctx) ? `\n${buildSkillsTable(ctx)}\n` : '') +
-    FOOTER;
-
-  return [{ filename: 'GEMINI.md', content }];
+  return [{ filename: 'GEMINI.md', content: assemble(ctx, { heading: '# GEMINI.md\n\n', ruleFormat: 'imports' }) }];
 }
-
-// ---- Codex CLI: AGENTS.md ----
-// Format: Plain Markdown with inline priority table (AGENTS.md open standard).
-// Source: docs/agents/codex-cli.md
 
 function generateAgentsMd(ctx: GeneratorContext): AgentFile[] {
-  const rows = buildRows(ctx);
-
-  const body = rows
-    .map((r) => `| ${r.priority} | \`.agents/rules/${r.file}\` | ${r.description} |`)
-    .join('\n');
-
-  const table = `${TABLE_HEADER}\n${body}`;
-
-  const content =
-    `# AGENTS.md\n\n` +
-    DIRECTIVE +
-    RULES_LOCATION +
-    `${table}\n` +
-    (buildSkillsTable(ctx) ? `\n${buildSkillsTable(ctx)}\n` : '') +
-    FOOTER;
-
-  return [{ filename: 'AGENTS.md', content }];
+  return [{ filename: 'AGENTS.md', content: assemble(ctx, { heading: '# AGENTS.md\n\n', ruleFormat: 'table' }) }];
 }
-
-// ---- GitHub Copilot: .github/copilot-instructions.md ----
-// Format: Plain Markdown with inline priority table, no YAML frontmatter.
-// Source: docs/agents/github-copilot.md
 
 function generateCopilotInstructions(ctx: GeneratorContext): AgentFile[] {
-  const rows = buildRows(ctx);
-
-  const body = rows
-    .map((r) => `| ${r.priority} | \`.agents/rules/${r.file}\` | ${r.description} |`)
-    .join('\n');
-
-  const table = `${TABLE_HEADER}\n${body}`;
-
-  const content =
-    H1_PROJECT +
-    DIRECTIVE +
-    RULES_LOCATION +
-    `${table}\n` +
-    (buildSkillsTable(ctx) ? `\n${buildSkillsTable(ctx)}\n` : '') +
-    FOOTER;
-
-  return [{ filename: '.github/copilot-instructions.md', content }];
+  return [{ filename: '.github/copilot-instructions.md', content: assemble(ctx, { heading: H, ruleFormat: 'table' }) }];
 }
-
-// ---- Windsurf / Devin: .devin/rules/00-agent-rules.md ----
-// Format: YAML frontmatter (trigger: always_on) + Markdown numbered list.
-// Source: docs/agents/windsurf.md
 
 function generateWindsurfRules(ctx: GeneratorContext): AgentFile[] {
-  const rows = buildRows(ctx);
-  const lines = rows.map(numberedLine);
-
-  const content =
-    `---\n` +
-    `trigger: always_on\n` +
-    `description: "Project AI agent rules and conventions — always loaded into every session"\n` +
-    `---\n\n` +
-    H1_PROJECT +
-    DIRECTIVE +
-    RULES_LOCATION +
-    `${lines.join('\n')}\n` +
-    (buildSkillsTable(ctx) ? `\n${buildSkillsTable(ctx)}\n` : '') +
-    FOOTER;
-
-  return [{ filename: '.devin/rules/00-agent-rules.md', content }];
+  return [{ filename: '.devin/rules/00-agent-rules.md', content: assemble(ctx, {
+    frontmatter: `---\ntrigger: always_on\ndescription: "${FRONTMATTER_DESC}"\n---\n\n`,
+    heading: H,
+    ruleFormat: 'numbered',
+  }) }];
 }
 
-// ---- Continue.dev: .continue/rules/00-agent-rules.md ----
-// Format: YAML frontmatter (no globs = always apply) + Markdown.
-// Source: docs/agents/continue.md
-
 function generateContinueRules(ctx: GeneratorContext): AgentFile[] {
-  const rows = buildRows(ctx);
-  const lines = rows.map(numberedLine);
-
-  const content =
-    `---\n` +
-    `# Always apply these rules to every session\n` +
-    `---\n\n` +
-    H1_PROJECT +
-    DIRECTIVE +
-    RULES_LOCATION +
-    `${lines.join('\n')}\n` +
-    (buildSkillsTable(ctx) ? `\n${buildSkillsTable(ctx)}\n` : '') +
-    FOOTER;
-
-  return [{ filename: '.continue/rules/00-agent-rules.md', content }];
+  return [{ filename: '.continue/rules/00-agent-rules.md', content: assemble(ctx, {
+    frontmatter: '---\n# Always apply these rules to every session\n---\n\n',
+    heading: H,
+    ruleFormat: 'numbered',
+  }) }];
 }
 
 // ---- Registry ----
 
+/** Maps agent keys to generator functions. */
+const GENERATOR_MAP: Record<string, AgentGenerator> = {
+  'claude-code': generateClaudeMd,
+  cursor: generateCursorRules,
+  'gemini-cli': generateGeminiMd,
+  gemini: generateGeminiMd,
+  codex: generateAgentsMd,
+  'github-copilot': generateCopilotInstructions,
+  continue: generateContinueRules,
+  windsurf: generateWindsurfRules,
+};
+
 /**
  * Maps agent keys to generator functions (Strategy pattern).
- * To add a new agent: write a generator function and call `set()` in the constructor.
+ * Built from AGENT_META + GENERATOR_MAP — adding a new agent only requires
+ * adding one entry to AGENT_META and one entry to GENERATOR_MAP.
  *
  * Singleton instance `generatorRegistry` is exported for convenience;
  * a new `GeneratorRegistry()` can also be instantiated for testing.
@@ -296,14 +202,16 @@ export class GeneratorRegistry {
   private readonly generators = new Map<string, AgentGenerator>();
 
   constructor() {
-    this.generators.set('claude-code', generateClaudeMd);
-    this.generators.set('cursor', generateCursorRules);
-    this.generators.set('gemini-cli', generateGeminiMd);
-    this.generators.set('gemini', generateGeminiMd);
-    this.generators.set('codex', generateAgentsMd);
-    this.generators.set('github-copilot', generateCopilotInstructions);
-    this.generators.set('continue', generateContinueRules);
-    this.generators.set('windsurf', generateWindsurfRules);
+    for (const { key } of AGENT_META) {
+      const gen = GENERATOR_MAP[key];
+      if (!gen) {
+        throw new Error(
+          `Agent "${key}" is defined in AGENT_META but has no entry in GENERATOR_MAP. ` +
+            'Add an entry to GENERATOR_MAP in generator.service.ts.',
+        );
+      }
+      this.generators.set(key, gen);
+    }
   }
 
   /** Look up a generator by agent key. Returns `undefined` for unknown keys. */
