@@ -8,13 +8,7 @@
   ],
   "agents": [
     "claude-code",
-    "cursor",
-    "gemini",
-    "gemini-cli",
-    "codex",
-    "github-copilot",
-    "continue",
-    "windsurf"
+    "gemini"
   ],
   "hasUserprompt": true,
   "userpromptFile": "nodejs-expert",
@@ -29,5 +23,5 @@
   "hasProjectPackages": false,
   "syncSkills": false,
   "skills": [],
-  "lastSync": "2026-06-17T20:44:36.411Z"
+  "lastSync": "2026-06-17T21:18:52.465Z"
 }
