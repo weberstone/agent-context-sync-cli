@@ -1,224 +1,80 @@
 # AI Workflow & Execution Rules
+[CRITICAL] These rules define how the AI must operate in this project.
 
-These rules define the mandatory workflow for this project.
-
-## 0. Scope Evaluation
-
-Determine task complexity before acting.
+## Scope Evaluation
 
 ### Micro-Task
-Small, isolated changes. Execute directly.
-
-Examples:
-- typos;
-- minor styling;
-- single-function updates;
-- localized bug fixes.
-
-Do NOT create `.agents/roadmap.md` or `.agents/memory.md`.
+Local change in a single place with no architectural impact and no cross-module effects.
 
 ### Macro-Task
-Use the full workflow for:
-- new features;
-- multi-file changes;
-- architectural work;
-- refactors affecting multiple components;
-- tasks requiring staged execution.
+Any change that affects multiple files, involves architecture, or has unclear side effects.
+If unclear → ask user to choose.
 
-### Unclear Scope
-Briefly explain the ambiguity and ask the user whether to use the Micro or Macro protocol.
-
----
-
-## 1. Planning Artifacts
-
-Before implementing a Macro-Task, create or update:
-
-- `.agents/roadmap.md` (Global execution plan)
-- `.agents/memory.md` (Active scratchpad & state)
-
----
-
-## 2. Roadmap Rules
-
-Each stage in `roadmap.md` MUST contain:
-
-### Goal
-Expected outcome.
-
-### Tasks
-Use these statuses:
-
+## For Macro-Task
+Before you start running a **Macro-Task**, you must:
+1. **Analyze & Planning**. If this is the beginning of a global task (the beginning of a project, the beginning of a new component or microservice), you should decompose the task and divide it into microtasks that are grouped into logical blocks/stages: 1 block = 1 independent commit - the result of which can be tested and shared between subagents (if the user wishes).
+   Then create, modify, or supplement the `.agents/roadmap.md` file with tasks and their descriptions (requirements, features, etc.), as well as with a mark of the task readiness status according to the principle:
 ```text
 [ ] Planned
-[-] Implemented, awaiting verification
-[x] Verified
+[x] Done
 ```
+The roadmap may change as the project progresses. [CRITICAL] Keep it up to date.
 
-### Dependencies
-List required prerequisites.
+2. **Wait for Selection**: Only AFTER the user explicitly confirms the plan, you may start applying changes to the actual project files.
 
-A stage is LOCKED if any dependency remains `[ ]` or `[-]`.
+## Workflow (every task)
 
-### DoD (Definition of Done)
-Objective completion criteria.
+### Step 1 — Analysis
+Assess the task and offer the user 2-3 solutions, indicating the pros and cons, code examples, and the impact on the project architecture for each approach.
+Before starting a task, check the `.agents/memory.md` file. There may be a note from another agent that should be taken into account when performing the task.
 
-### History
-Never delete completed or obsolete stages. Preserve execution history.
+### Step 2 — Approval Gate
+Stop and wait for user approval. Implement only the approved scope.
 
----
+### Step 3 — Выполнение задачи
+The AI must:
+- modify only files related to the approved stage;
+- avoid unrelated refactors;
+- avoid “improvements” outside scope.
+  [CRITICAL] No autonomous architectural decisions.
 
-## 3. Stage Size
+#### 1. Write tests first
+If a task affects the business logic of a module or component, you should write tests first, since you know what result you should get as a result of the task.
 
-Each stage should represent a single reviewable unit of work.
+#### 2. Business logic code
+- [CRITICAL] Write code strictly in accordance with code style & architecture rules.
+- If you need to remember something or communicate to another agent about the specifics of working with a specific module, make notes in the `.agents/memory.md` file in accordance with the already defined architecture and be sure to provide a clear and understandable explanation. Keep it updated during work.
 
-Guideline:
-
-```text
-1 Stage ≈ 1 User Commit
-```
-
-Do not combine unrelated changes.
-
----
-
-## 4. Interaction Protocol
-
-For each new stage:
-
-1. Analyze the task.
-2. Propose implementation options with brief pros/cons.
-3. Wait for user selection or adjustments.
-4. Synchronize the approved plan to `roadmap.md` and `memory.md`.
-5. Obtain explicit approval before implementation.
-6. Implement the agreed scope.
-
-Re-approval is required only when the approved scope changes.
-
----
-
-## 5. Scope Changes
-
-If requirements change:
-
-- preserve roadmap history;
-- never rewrite past stages;
-- append new stages/tasks;
-- document rationale in `memory.md`.
-
----
-
-## 6. Testing
-
-For testable business logic:
-
-1. Write tests first (Vitest / NgTest where applicable).
-2. Implement the minimal logic required to satisfy them.
-
-TDD is optional for:
-- styling;
-- templates;
-- documentation;
-- configuration;
-- infrastructure setup.
-
----
-
-## 7. Code Generation Rules
-
-### No Lazy Coding
-
-Never generate placeholders such as:
-
-```ts
-// TODO
-// implement later
-// ... rest of code
-```
-
-Always provide complete implementations within the approved scope.
-
-### Scope Discipline
-
-Modify only files relevant to the current stage.
-
-Avoid unrelated refactors unless explicitly requested.
-
----
-
-## 8. Verification Protocol
-
+#### 3. Verification Protocol
 After implementation:
 
-- run lint;
-- run formatter;
-- run typecheck;
-- run build;
-- run tests (if applicable).
+Run:
+- lint;
+- format;
+- typecheck;
+- build;
+- tests (if applicable).
 
 Rules:
+- fix only issues caused by current changes;
+- do not touch pre-existing unrelated problems;
+- do not guess fixes.
+- re-run checks after fixed.
 
-- fix only issues introduced by current changes;
-- ignore unrelated pre-existing failures;
-- never apply blind fixes.
-
-If validation fails:
-
-1. Record the error trace in `memory.md`.
-2. Document the suspected root cause.
-3. Apply a targeted fix.
-4. Re-run validation.
-
----
-
-## 9. State Synchronization
-
-Before reporting a stage as complete, update:
-
+#### 4. State Sync
+Before marking stage, complete the update & re-check a validation result:
 - `roadmap.md`;
 - `memory.md`.
 
-They MUST reflect:
-
-- current progress;
-- completed work;
-- pending tasks;
-- validation status;
-- known issues;
-- next steps.
-
-State synchronization is part of the Definition of Done.
-
----
-
-## 10. Repository Rules
-
-### Git Commits
-
+#### 5. [CRITICAL] Git Control
 The AI MUST NEVER run:
-
 ```bash
 git commit
 ```
+Flow:
+1. AI completes stage.
+2. User reviews.
+3. User commits manually.
+4. User confirms next step.
 
-Required flow:
-
-1. AI completes the stage.
-2. User reviews and verifies.
-3. User creates the commit manually.
-4. User instructs the AI to continue.
-
----
-
-## 11. Cleanup
-
-After the user confirms that the entire task is complete:
-
-1. Ask whether temporary agent artifacts should be removed.
-2. Delete them only after explicit permission.
-
-Artifacts may include:
-
-- `.agents/roadmap.md`;
-- `.agents/memory.md`;
-- other temporary workflow files created during execution.
+No exceptions.
