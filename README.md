@@ -14,7 +14,7 @@ Centralized, modular CLI tool to sync AI coding agents rules & skills across rep
 </p> 
 
 <p align="center">
-An interactive CLI to generate and synchronize global or project-specific development guidelines, architecture standards, and custom agent skills for <b>Cursor</b>, <b>Claude Code</b>, <b>Windsurf</b>, <b>GitHub Copilot</b>, <b>Continue</b>, <b>Codex</b>, and <b>Gemini</b>.
+An interactive CLI to generate and synchronize global or project-specific development guidelines, architecture standards, and custom agent skills for <b>Cursor</b>, <b>Claude Code</b>, <b>Windsurf</b>, <b>OpenCode</b>, <b>GitHub Copilot</b>, <b>Continue</b>, <b>Codex</b>, and <b>Gemini</b>.
 </p>
 
 ## 📑 Table of Contents
